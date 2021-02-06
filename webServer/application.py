@@ -1,6 +1,6 @@
 import re
 import socketserver
-from os.path import normpath, relpath, sep
+from os.path import normpath, relpath, sep, getsize
 from urllib.parse import unquote
 
 from config import config
@@ -29,11 +29,30 @@ class Application(socketserver.BaseRequestHandler):
 
 	def __getWhat(self):
 		line1 = self.req.split('\r\n')[0]
-		request = unquote(re.sub(r'(^GET | HTTP/1.1$|\.\.)', '', line1))
-		return self.__toServerPath(request)
+		requestedResource = unquote(re.sub(r'(^GET | HTTP/1.1$|\.\.)', '', line1))
+		rangeHdr = ([l for l in self.req.split('\r\n') 
+				if 'range' in l.lower()]+[None])[0]
+		return {
+			'resource': self.__toServerPath(requestedResource),
+			'range': self.__toRange(rangeHdr)}
 
-	def __toServerPath(self, reqPath):
-		return normpath(config('root') + reqPath)
+	def __toServerPath(self, requestedResource):
+		return normpath(config('root') + requestedResource)
 
 	def __toClientPath(self, absPath):
 		return relpath(absPath, config('root')).replace(sep, '/')
+
+	def __toRange(self, rangeHeader):
+		# An HTTP/1.1 feature.
+		# https://httpwg.org/specs/rfc7233.html
+		if not rangeHeader:
+			return None
+		if not 'bytes=' in rangeHeader:
+			return None
+		byteses = [int(x) for x in re.findall(r'(\d+)', rangeHeader)]
+		if not len(byteses):
+			return None
+		return (byteses[0], 
+				byteses[1] # inclusive
+				if len(byteses) > 1 
+				else None)
