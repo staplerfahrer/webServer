@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- cave-dark background -->
+  <rect width="32" height="32" rx="4" fill="#1c1b19"/>
+  <!-- gold iris, almond-shaped via quadratic beziers meeting at left and right points -->
+  <path d="M3 16 Q16 7 29 16 Q16 25 3 16Z" fill="#ffdd00"/>
+  <!-- vertical slit pupil, same dark as background so it bleeds cleanly -->
+  <ellipse cx="16" cy="16" rx="2.5" ry="4.5" fill="#1c1b19"/>
+  <!-- catch light -->
+  <ellipse cx="11" cy="13" rx="1.8" ry="1.1" fill="white" opacity="0.5"/>
+</svg>

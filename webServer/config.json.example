@@ -1,0 +1,19 @@
+{
+    "address"             : "0.0.0.0",
+    "port"                : 80,
+    "bufferSize"          : 1024,
+	"zoomSpeed"           : "90",
+    "thumbSize"           : [400, 400],
+    "thumbnailCss"        : "width: 400px; height: 400px; border: 2px solid #00000030; border-radius: 4px;",
+    "galleryBackgroundCss": "background-color: oklch(0.2864 0.0038 82.79);",
+    "outlineCss"          : "outline-color: oklch(0.6588 0.1061 82.79);",
+    "=== note 1 ==="      : "Thumb color used by Pillow, converted from oklch.",
+    "thumbBackgroundColor": "#2b2a28",
+    "viewerBackgroundCss" : "background: radial-gradient(circle, oklch(0.1805 0.0038 82.79 / 1) 33%, oklch(0.2864 0.0038 82.79 / 0.95) 100%);",
+    "autoPlayTimer"       : 9000,
+    "cacheSeconds"        : 2678400,
+    "root"                : "z:\\p",
+    "autoStart"           : false,
+    "thumbnailPorts"      : [8080, 8081, 8082, 8083, 8084],
+    "allowDelete"         : true
+}
