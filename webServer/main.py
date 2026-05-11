@@ -11,7 +11,7 @@ import traceback
 
 
 from config import config
-import request_handler
+import handle_request
 import stats
 from log import log
 
@@ -84,7 +84,7 @@ def listen(address: str, port: int):
 				conn, addr = serv.accept()
 				log(f'Connected...{addr}')
 				# https://stackoverflow.com/questions/20289981/python-sockets-stop-recv-from-hanging
-				req = str(conn.recv(1024), 'utf-8')
+				req = str(conn.recv(1_048_576), 'utf-8')
 				if req == '':
 					log('blank request')
 					continue
@@ -121,11 +121,11 @@ def thread_worker():
 				conn, req = thumbnailQueue.popleft()
 			firstLine = req.split('\r\n', 1)[0]
 			if firstLine.startswith('GET ') and firstLine.endswith(' HTTP/1.1'):
-				log(firstLine[4:-9])
+				log('Popping get ' + firstLine[4:-9])
 			else:
 				log('Popping job ' + req.replace('\r\n', '\\n'))
-			bytes_ = request_handler.build_response(req)
-			conn.sendall(bytes_)
+			bytes_ = handle_request.build_response_bytes(req)
+			conn.sendall(bytes_) # , flags=
 			conn.close()
 
 			elapsed = perf_counter() - startTime
@@ -153,7 +153,7 @@ def ui():
 		daemon=True).start()
 
 	cols = get_terminal_size().columns
-	sec_per_frame = 1 / 10
+	sec_per_frame = 1 / 60
 	last_rq = 0
 	req_sec_avg = 0
 	while True:
@@ -171,15 +171,15 @@ def ui():
 			pt  = stats.processingTime
 			rq  = stats.requestsServed
 		req_sec = (rq - last_rq) / sec_per_frame
-		req_sec_avg = req_sec * 0.01 + req_sec_avg * 0.99
+		req_sec_avg = req_sec * 0.005 + req_sec_avg * 0.995
 		last_rq = rq
-		statsLine = f'{tn:,} tn  {b:,} B  {pt:.1f} s  {req_sec_avg:.1f} req/s'
+		statsLine = f'{tn:,} tn  {b:,} B  {pt:.1f} s  {req_sec_avg:.0f} req/s'
 		sys.stdout.write(
 			f'\033[5A'
 			f'{title}\n'
 			f'Press <CTRL+C> to quit, <CTRL+R> to restart.\n'
-			f'\r\033[K{requestQueue:>4} queue   {"Q" * min(requestQueue, cols)}\n'
-			f'\r\033[K{busyWorkers :>4} workers {"W" * min(busyWorkers, cols)}\n'
+			f'\r\033[K{requestQueue:>4} queue   {"Q" * min(requestQueue, cols - 20)}\n'
+			f'\r\033[K{busyWorkers :>4} workers {"W" * min(busyWorkers, cols - 20)}\n'
 			f'\r\033[K{statsLine}\n'
 		)
 		sys.stdout.flush()

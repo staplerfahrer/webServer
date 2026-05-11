@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=0.3">
+	<meta charset="UTF-8">
 	<title>hoard</title>
 	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 	<!-- #region MARK:style
@@ -9,10 +10,10 @@
 	<style>
 		body {
 			/*{galleryBackgroundCss}*/
-			margin          : 0;
-			font-size       : 0;
-			scrollbar-color: #ffdd00 #000000;
-			/* scrollbar-width: auto; */
+			margin         : 0;
+			font-size      : 0;
+			scrollbar-width: auto;
+			user-select    : none;
 		}
 
 		body::-webkit-scrollbar {
@@ -20,7 +21,7 @@
 		}
 
 		body::-webkit-scrollbar-track {
-			background: #000000;        /* color of the tracking area */
+			background: #1c1b19;        /* color of the tracking area */
 		}
 
 		body::-webkit-scrollbar-thumb {
@@ -33,37 +34,12 @@
 			margin   : 10px;
 		}
 
-		.thumbnail {
-			opacity       : 0;
-			margin        : 3px;
-			outline-color : transparent;
-			outline-style : solid;
-			outline-offset: -4px;
-			outline-width : 4px;
-			/*{thumbnailCss}*/
-		}
-
-		@keyframes fadeIn {
-			0% { opacity: 0; }
-			100% { opacity: 0.8; }
-		}
-		.fadeIn {
-			animation: fadeIn 0.1s;
-			animation-timing-function: ease-in-out;
-			animation-fill-mode: forwards;
-		}
-
 		.dirItem {
 			outline-style : solid;
 			outline-offset: 3px;
 			outline-width : 4px;
 			outline-color : transparent;
 			border-radius : 3px;
-		}
-
-		.outline {
-			outline-color: #000000;
-			/*{outlineCss}*/
 		}
 
 		#viewBox {
@@ -125,6 +101,16 @@
 		<video id="viewVideo" controls></video>
 	</div>
 	<div id="autoPlayButton"></div>
+
+	<!-- Loads the thumbs object & everything else -->
+	{thumbnailHtml}
+
+	<style>
+		.selection-outline {
+			outline-color: #000000;
+			/*{selectionOutlineCss}*/
+		}
+	</style>
 	<script>
 		// UI elements
 		var vb             = null;
@@ -143,12 +129,11 @@
 			imgElms              : [],
 			dirElms              : {},
 			viewportUnzoomedScale: window.visualViewport.scale,
-			pageScrollYPos       : null
+			pageScrollYPos       : null,
+			lowestPending        : 0,
 		};
 
 		var cache          = {};
-		var pendingThumbs  = []; // unloaded thumbnails in DOM order; shrinks as images load
-		var tnPorts        = {thumbnailPorts};
 		var siblingUrls    = {siblingUrls};
 		var allowDelete    = {allowDelete};
 
@@ -157,15 +142,18 @@
 		vv = document.getElementById('viewVideo');
 		autoPlayButton = document.getElementById('autoPlayButton');
 
-		//#region MARK:cookie stuff
-		function getCookie(label) {
-			var values = document.cookie.split('; ');
-			for (var i = 0; i < values.length; i++) {
-				if (values[i].indexOf(label) === -1) continue;
-				return values[i].replace(label, '');
-			}
+
+		function buildDom() {
+			document.title = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`;
+			viewerState.dirUrls.forEach((url, i) => addDir(url, i));
+			var br = document.createElement('br');
+			br.style.clear = 'both';
+			document.body.appendChild(br);
+			viewerState.imgUrls.forEach((url, i) => thumbs.add(url, i));
 		}
 
+
+		//#region MARK:cookie stuff
 		function resumeSession() {
 			if (window.location.search.includes('override')) {
 				updateCookie(window.location.origin + window.location.pathname, 0);
@@ -194,6 +182,14 @@
 			var index    = getCookie('viewIndex=i');
 			if (viewerState.viewedIndex !== index)
 				viewerState.viewedIndex = Number(index);
+		}
+
+		function getCookie(label) {
+			var values = document.cookie.split('; ');
+			for (var i = 0; i < values.length; i++) {
+				if (values[i].indexOf(label) === -1) continue;
+				return values[i].replace(label, '');
+			}
 		}
 
 		function updateCookie(newPath, newIndex, newLastChild) {
@@ -396,7 +392,7 @@
 
 			// highlight now so bfcache preserves it when hitting back
 			var elm = viewerState.dirElms[relUrl];
-			if (elm) elm.classList.add('outline');
+			if (elm) elm.classList.add('selection-outline');
 
 			// keep last 2 navigated-to dirs
 			var parts = (getCookie('lastChild=') || '').split('|').filter(Boolean);
@@ -437,24 +433,10 @@
 			lastChild.split('|').forEach(function(url) {
 				var elm = viewerState.dirElms[url];
 				if (!elm) return;
-				elm.classList.add('outline');
+				elm.classList.add('selection-outline');
 				if (!scrollTarget) scrollTarget = elm;
 			});
 			if (scrollTarget) scrollTarget.scrollIntoView();
-		}
-
-		function addImg(url, i) {
-			var img = document.createElement('img');
-			img.setAttribute('class',      'thumbnail');
-			img.setAttribute('data-src',   'http://' + window.location.hostname + ':' + tnPorts[i % tnPorts.length] + url + '?tn');
-			img.setAttribute('src',        '');
-			img.setAttribute('title',      url);
-			img.setAttribute('data-index', i);
-			img.onclick = toggleZoom;
-			img.onload = (e) => { e.target.classList.add('fadeIn'); e.target._loaded = true; };
-			document.body.appendChild(img);
-			viewerState.imgElms.push(img);
-			pendingThumbs.push(img);
 		}
 		//#endregion
 
@@ -475,9 +457,9 @@
 				var x = viewerState.imgElms[i];
 				var iidx = x.getAttribute('data-index');
 				if (iidx === null) continue;
-				x.classList.remove('outline');
+				x.classList.remove('selection-outline');
 				if (iidx == viewerState.viewedIndex) {
-					x.classList.add('outline');
+					x.classList.add('selection-outline');
 					document.documentElement.scrollTop = x.offsetTop;
 				}
 			}
@@ -494,82 +476,95 @@
 					var c = document.createElement('img');
 					c.src = cacheUrl;
 					cache[cacheUrl] = c;
-					// delete cache[i];
 				}
-			}, 2000);
-		}
-
-		//////// do the loading
-		function insertLinksAndImages() {
-			viewerState.dirUrls.forEach((url, i) => addDir(url, i));
-			var br = document.createElement('br');
-			br.style.clear = 'both';
-			document.body.appendChild(br);
-			viewerState.imgUrls.forEach((url, i) => addImg(url, i));
-		}
-
-		function loadVisible() {
-			for (var i = 0; i < pendingThumbs.length; i++) {
-				var img = pendingThumbs[i];
-				if (img._requested) continue;
-				if (!isVisible(img)) continue;
-				img._requested = true;
-				img.setAttribute('src', img.getAttribute('data-src'));
-			}
-		}
-
-		function startLoading() {
-			window.setInterval(() => {
-				// rate limiting the loading
-				if (window.busyLoading) return;
-				if (!currentlyScrolling()) return;
-				window.busyLoading = true;
-				loadVisible();
-				delete window.busyLoading;
 			}, 500);
 		}
 
-		function backgroundLoad() {
-			window.setInterval(() => {
-				if (window.busyLoading) return;
+		//////// do the loading
+		function loadVisibleThumbs() {
+			for (var i = viewerState.lowestPending; i < viewerState.imgElms.length; i++) {
+				var img = viewerState.imgElms[i]
+				if (!isVisible(img))
+					continue
+				thumbs.load(i, viewerState)
+			}
 
-				// compact: drop images already requested (by this fn or loadVisible)
-				var j = 0;
-				for (var i = 0; i < pendingThumbs.length; i++) {
-					if (!pendingThumbs[i]._requested) pendingThumbs[j++] = pendingThumbs[i];
-				}
-				pendingThumbs.length = j;
+			// An optimization.
+			// From top down, while requested: these thumbs are no longer pending.
+			while (viewerState.lowestPending < viewerState.imgElms.length
+					&& viewerState.imgElms[viewerState.lowestPending]._requested)
+				viewerState.lowestPending++
 
-				// pendingThumbs is in DOM order (top→bottom), so find the split point
-				// between above-viewport and below-viewport items in one pass
-				var visibleTop    = document.documentElement.scrollTop;
-				var visibleBottom = visibleTop + document.documentElement.clientHeight;
-				var loadExtra     = 100;
-				var splitIdx      = 0;
-				for (var i = 0; i < pendingThumbs.length; i++) {
-					var itemTop    = pendingThumbs[i].offsetTop;
-					var itemBottom = itemTop + pendingThumbs[i].height;
-					if (itemBottom > visibleTop - loadExtra && itemTop < visibleBottom + loadExtra) return; // visible pending — wait
-					if (itemBottom < visibleTop) splitIdx = i + 1;
-				}
-
-				// load extra from each side, closest to viewport first
-				for (var i = 0; i < 10; i++) {
-					var aboveIdx = splitIdx - 1 - i;
-					var belowIdx = splitIdx + i;
-					if (aboveIdx >= 0) {
-						pendingThumbs[aboveIdx]._requested = true;
-						pendingThumbs[aboveIdx].setAttribute('src', pendingThumbs[aboveIdx].getAttribute('data-src'));
-					}
-					if (belowIdx < pendingThumbs.length) {
-						pendingThumbs[belowIdx]._requested = true;
-						pendingThumbs[belowIdx].setAttribute('src', pendingThumbs[belowIdx].getAttribute('data-src'));
-					}
-				}
-			}, 200);
+			// schedule next check
+			window.setTimeout(() => {
+				//if (window.busyLoading) return
+				// if (!currentlyScrolling()) return
+				// window.busyLoading = true
+				loadVisibleThumbs()
+				// delete window.busyLoading
+			}, 250)
 		}
 
-		//#region MARK:events
+		function loadRandomly() {
+			const speed = 1000 / 30
+
+			if (currentlyScrolling())
+				// schedule next
+				return window.setTimeout(loadRandomly, speed)
+
+			let next = viewerState.lowestPending + Math.floor(
+				Math.random() * (viewerState.imgElms.length - viewerState.lowestPending))
+
+			while (next < viewerState.imgElms.length && viewerState.imgElms[next]._requested)
+				next++
+
+			if (next == viewerState.imgElms.length && !viewerState.imgElms.some(x => !x._requested))
+				return console.log(`done randomizing`)
+
+			if (next < viewerState.imgElms.length)
+				thumbs.load(next, viewerState)
+
+			// schedule next
+			window.setTimeout(loadRandomly, speed)
+		}
+
+		// function backgroundLoadThumbs() {
+		// 	window.setInterval(() => {
+		// 		while (viewerState.lowestPending < viewerState.imgElms.length && viewerState.imgElms[viewerState.lowestPending]._requested)
+		// 			viewerState.lowestPending++;
+		// 		if (viewerState.lowestPending >= viewerState.imgElms.length) return;
+
+		// 		// imgElms is in DOM order (top→bottom); find the split point between
+		// 		// above-viewport and below-viewport unrequested items in one pass
+		// 		var visibleTop    = document.documentElement.scrollTop;
+		// 		var visibleBottom = visibleTop + document.documentElement.clientHeight;
+		// 		var loadExtra     = 100;
+		// 		var splitIdx      = viewerState.lowestPending;
+		// 		for (var i = viewerState.lowestPending; i < viewerState.imgElms.length; i++) {
+		// 			var img = viewerState.imgElms[i];
+		// 			if (img._requested) continue;
+		// 			var itemTop    = img.offsetTop;
+		// 			var itemBottom = itemTop + img.height;
+		// 			if (itemBottom > visibleTop - loadExtra && itemTop < visibleBottom + loadExtra) return; // visible pending — wait
+		// 			if (itemBottom <= visibleTop) splitIdx = i + 1;
+		// 		}
+
+		// 		// load from each side, closest to viewport first
+		// 		var aIdx = splitIdx - 1;
+		// 		var bIdx = splitIdx;
+		// 		for (var i = 0; i < 10; i++) {
+		// 			while (aIdx >= viewerState.lowestPending && viewerState.imgElms[aIdx]._requested) aIdx--;
+		// 			while (bIdx < viewerState.imgElms.length && viewerState.imgElms[bIdx]._requested) bIdx++;
+		// 			var aImg = aIdx >= viewerState.lowestPending              ? viewerState.imgElms[aIdx] : null;
+		// 			var bImg = bIdx < viewerState.imgElms.length ? viewerState.imgElms[bIdx] : null;
+		// 			if (!aImg && !bImg) break;
+		// 			if (aImg) { aImg._requested = true; aImg.setAttribute('src', aImg.getAttribute('data-src')); aIdx--; }
+		// 			if (bImg) { bImg._requested = true; bImg.setAttribute('src', bImg.getAttribute('data-src')); bIdx++; }
+		// 		}
+		// 	}, 200);
+		// }
+
+		//#region MARK:user events
 		function bindEvents() {
 			vb.onclick = toggleZoom;
 
@@ -622,6 +617,7 @@
 							viewerState.imgElms[idx].remove();
 							viewerState.imgElms.splice(idx, 1);
 							viewerState.imgUrls.splice(idx, 1);
+							if (idx < viewerState.lowestPending) viewerState.lowestPending--;
 							for (var i = idx; i < viewerState.imgElms.length; i++)
 								viewerState.imgElms[i].setAttribute('data-index', i);
 							if (viewerState.imgUrls.length === 0) { toggleZoom(); return; }
@@ -744,14 +740,13 @@
 		}
 		//#endregion
 
-		//#region MARK:boot UI
-		document.title = 'hoard  ' + viewerState.imgUrls.length + ' ' + decodeURIComponent(window.location.pathname);
+		//#region MARK:boot the UI
+		buildDom();
 		resumeSession();
-		insertLinksAndImages();
 		highlightLastDir();
-		loadVisible();
-		startLoading();
-		backgroundLoad();
+		loadVisibleThumbs();
+		loadRandomly();
+		// backgroundLoadThumbs();
 		bindEvents();
 		borderViewed();
 		//#endregion

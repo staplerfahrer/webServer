@@ -66,5 +66,10 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		os.unlink(reqObj)
 
 	buf = io.BytesIO()
-	canvas.save(buf, format='jpeg', quality=95, subsampling='4:4:4')
-	return buf.getvalue(), 'image/jpeg'
+	if canvas.mode == 'RGB':
+		canvas.save(buf, format='jpeg', quality=90, optimize=False, progressive=True, subsampling=1)
+		return buf.getvalue(), 'image/jpeg'
+	else:
+		canvas.save(buf, format='png', optimize=False, compress_level=9)
+		return buf.getvalue(), 'image/png'
+

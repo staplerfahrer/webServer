@@ -1,0 +1,59 @@
+<style>
+	@keyframes tn-fade {
+		0%   { opacity: 0;    }
+		100% { opacity: 0.75; }
+	}
+
+	.tn {
+		opacity                  : 0;
+		margin                   : 3px;
+		outline-color            : transparent;
+		outline-style            : solid;
+		outline-offset           : -4px;
+		outline-width            : 4px;
+		/*{thumbnailCss}*/
+	}
+
+	.tn-fade {
+		animation                : tn-fade .3s;
+		animation-timing-function: ease;
+		animation-fill-mode      : forwards;
+	}
+</style>
+<script>
+	const thumbs = (function(){
+		const ports = {thumbnailPorts}
+
+		function add(url, i) {
+			var img = document.createElement('img')
+			img.setAttribute('class', 'tn')
+			img.setAttribute('data-index', i)
+			img.setAttribute('data-src', `${
+				location.protocol}//${
+				window.location.hostname}:${
+				ports[i % ports.length]}${
+				url}?tn`)
+			img.setAttribute('src', '/thumbnail-placeholder.png')
+			img.setAttribute('title', url)
+			img.onclick = toggleZoom
+			img.onload = (e) => { e.target._loaded = true }
+			document.body.appendChild(img)
+			viewerState.imgElms.push(img)
+		}
+
+		function load(i, viewerState) {
+			var img = viewerState.imgElms[i]
+			if (img._requested)
+				return
+			img._requested = true
+			img.setAttribute('src', img.getAttribute('data-src'))
+			img.removeAttribute('data-src')
+			img.classList.add('tn-fade')
+		}
+
+		return {
+			add: add,
+			load: load,
+		}
+	})()
+</script>

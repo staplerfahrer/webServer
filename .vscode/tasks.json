@@ -20,6 +20,30 @@
 				"showReuseMessage": true,
 				"clear": false
 			}
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "taskkill /f /im python.exe & python main.py",
+			"runOptions": {
+				"instancePolicy": "terminateOldest"
+			},
+			"options": {
+				"cwd": "webServer"
+			},
+			"problemMatcher": [],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
 		}
 	]
 }
