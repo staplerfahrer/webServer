@@ -5,6 +5,8 @@
 	}
 
 	.tn {
+		color         : white;
+		font-size     : 16px;
 		margin        : 3px;
 		outline-color : transparent;
 		outline-style : solid;
@@ -44,6 +46,7 @@
 			const img = document.createElement('img')
 			img.classList.add('tn')
 			img.classList.add('tn-fade')
+			img.alt = url
 			img.setAttribute('data-index', i)
 			img.setAttribute('data-src', `${
 				location.protocol}//${
@@ -64,11 +67,22 @@
 			if (img._requested)
 				return
 			img._requested = true
-			img.setAttribute('src', img.getAttribute('data-src'))
-			img.removeAttribute('data-src')
-			img.onload = (e) => {
-				e.target._loaded = true
-				e.target.classList.remove('tn-fade')
+			try {
+				img.setAttribute('src', img.getAttribute('data-src'))
+				img.removeAttribute('data-src')
+				img.onload = (e) => {
+					e.target._loaded = true
+					e.target.classList.remove('tn-fade')
+				}
+				img.onerror = (e) => {
+					console.log(e)
+					img.classList.remove('tn-fade')
+					img._loaded = true
+				}
+			} catch (e) {
+				console.log(e)
+				img.classList.remove('tn-fade')
+				img._loaded = true
 			}
 		}
 

@@ -420,7 +420,7 @@
 			var p = document.createElement('p');
 			var a = document.createElement('a');
 			a.href = url;
-			a.innerText = url;
+			a.innerText = decodeURI(url);
 			a.onclick = navigate;
 			p.className = 'dirItem';
 			p.appendChild(a);

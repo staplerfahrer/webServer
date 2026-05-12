@@ -24,7 +24,7 @@
 		{
 			"label": "test",
 			"type": "shell",
-			"command": "taskkill /f /im python.exe & python main.py",
+			"command": "taskkill /f /im python.exe & py main.py",
 			"runOptions": {
 				"instancePolicy": "terminateOldest"
 			},

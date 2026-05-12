@@ -15,6 +15,8 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	tnWidthHeight = config('thumbWidthHeight')
 	tnColor = config('thumbBackgroundColor')
 	reqObj  = serverPath[:-3]
+	file_name = os.path.split(reqObj)[-1:][0]
+	file_extension = os.path.splitext(reqObj)[1][1:].upper()
 
 	# if video, extract a frame
 	try:
@@ -35,7 +37,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	# make a thumbnail
 	try:
 		img  = Image.open(reqObj)
-		text = f'{img.size[0]} x {img.size[1]}'
+		text = f'{file_extension}  {img.size[0]} x {img.size[1]}'
 
 		# convert to RGB
 		if img.mode == 'P':
@@ -60,7 +62,19 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		canvas = ImageEnhance.Sharpness(canvas).enhance(factor=1.7)
 	except Exception:
 		log(f'Exception at "make a thumbnail": {traceback.format_exc()}')
-		canvas = Image.new('RGB', tnWidthHeight)
+		reqObj = 'resources\\thumbnail-bad-picture.png'
+		img  = Image.open(reqObj)
+		text = f'BAD FILE  {file_name}'
+		canvas = Image.new(img.mode, tnWidthHeight, tnColor if img.mode == 'RGB' else 0)
+		left   = (tnWidthHeight[0] - img.size[0]) // 2
+		top    = (tnWidthHeight[1] - img.size[1]) // 2
+		canvas.paste(img, (left, top))
+		draw   = ImageDraw.Draw(canvas)
+		font   = ImageFont.load_default()
+		text_box = draw.textbbox((0, 0), text, font=font)
+		tw, th = text_box[2] - text_box[0], text_box[3] - text_box[1]
+		font_color = (95, 95, 95) if canvas.mode in ('RGB', 'RGBA') else 95
+		draw.text((tnWidthHeight[0] - tw - 2, tnWidthHeight[1] - th - 5), text, font=font, fill=font_color) # pyright: ignore[reportUnknownMemberType]
 
 	if reqObj.startswith('ffThumb') and os.path.exists(reqObj):
 		os.unlink(reqObj)

@@ -1,9 +1,10 @@
 from urllib.parse import unquote
-import os
 import subprocess
+import os
 
 import filesystem as fs
 import handle_directory
+import handle_file
 import handle_thumbnail
 from log import log
 from config import config
@@ -22,19 +23,18 @@ def build_response_bytes(req: str) -> bytes:
 		data, mime = fs.read_file_bytes('resources/thumbnail-placeholder.png')[0], 'image/png'
 	elif os.path.isdir(req_server_path):
 		data, mime = handle_directory.run(req_server_path)
-	elif req_server_path.endswith('?tn') \
-			and fs.is_picture(req_server_path[:-3]): # remove ?tn
+	elif req_server_path.endswith('?tn'): # remove ?tn
 		data, mime = handle_thumbnail.run(req_server_path)
 	elif req_server_path.endswith('?del'):
 		data, mime = fs.delete_file(req_server_path)
 	elif req_server_path.endswith('?explorer'):
 		data, mime = _open_explorer(req_server_path)
-	elif (not os.path.isfile(req_server_path)) \
-			or (not fs.is_picture(req_server_path)):
-		log(f'404 {req_server_path} not isfile(): {not os.path.isfile(req_server_path)} or not fs.isPicture(): {not fs.is_picture(req_server_path)}')
-		return b'HTTP/1.1 404 Not Found\r\ncontent-type: text/plain\r\ncontent-length: 9\r\n\r\nNot Found'
 	else:
-		data, mime, range_l, range_u, end = fs.serve_file(req_server_path, range_l, range_u)
+		result = handle_file.run(req_server_path, range_l, range_u)
+		if result is None:
+			log(f'404 {req_server_path}')
+			return b'HTTP/1.1 404 Not Found\r\ncontent-type: text/plain\r\ncontent-length: 9\r\n\r\nNot Found'
+		data, mime, range_l, range_u, end = result
 
 	return _encode(data, mime, range_l, range_u, end)
 

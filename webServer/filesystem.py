@@ -1,10 +1,11 @@
 import os
 import traceback
+import urllib.parse as urlparse
 
 from config import config
 from log import log
 
-_MIME: dict[str, str] = {
+MIME: dict[str, str] = {
 	'.jpg' : 'image/jpeg',
 	'.jpeg': 'image/jpeg',
 	'.png' : 'image/png',
@@ -26,7 +27,7 @@ _MIME: dict[str, str] = {
 
 def to_client_path(file_path: str) -> str:
 	url = file_path.replace(config('root'), '').replace('\\', '/')
-	return url if url else '/'
+	return urlparse.quote(url) if url else '/'
 
 
 def to_server_path(url: str) -> str:
@@ -70,11 +71,11 @@ def delete_file(server_path: str) -> tuple[bytes, str]:
 
 def is_picture(file_name: str) -> bool:
 	parts = os.path.splitext(file_name)
-	return parts[1].lower() in _MIME
+	return parts[1].lower() in MIME
 
 
 def serve_file(server_path: str, range_l: int | None, range_u: int | None) \
 		-> tuple[bytes, str, int | None, int | None, int | None]:
-	mime = _MIME[os.path.splitext(server_path)[1].lower()]
+	mime = MIME[os.path.splitext(server_path)[1].lower()]
 	data, range_l, range_u, end = read_file_bytes(server_path, range_l, range_u)
 	return data, mime, range_l, range_u, end
