@@ -12,7 +12,7 @@ from log import log
 
 def run(serverPath: str) -> tuple[bytes, str]:
 	log(f'handle_thumbnail {serverPath}')
-	tnSize  = config('thumbSize')
+	tnWidthHeight = config('thumbWidthHeight')
 	tnColor = config('thumbBackgroundColor')
 	reqObj  = serverPath[:-3]
 
@@ -43,24 +43,24 @@ def run(serverPath: str) -> tuple[bytes, str]:
 
 		# generate thumbnail
 		# https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.thumbnail
-		img.thumbnail(size=tnSize, resample=Image.Resampling.LANCZOS, reducing_gap=1.0)
+		img.thumbnail(size=tnWidthHeight, resample=Image.Resampling.LANCZOS, reducing_gap=1.0)
 
-		canvas = Image.new(img.mode, tnSize, tnColor if img.mode == 'RGB' else 0)
-		left   = (tnSize[0] - img.size[0]) // 2
-		top    = (tnSize[1] - img.size[1]) // 2
+		canvas = Image.new(img.mode, tnWidthHeight, tnColor if img.mode == 'RGB' else 0)
+		left   = (tnWidthHeight[0] - img.size[0]) // 2
+		top    = (tnWidthHeight[1] - img.size[1]) // 2
 		canvas.paste(img, (left, top))
 		draw   = ImageDraw.Draw(canvas)
 		font   = ImageFont.load_default()
 		text_box = draw.textbbox((0, 0), text, font=font)
 		tw, th = text_box[2] - text_box[0], text_box[3] - text_box[1]
 		font_color = (95, 95, 95) if canvas.mode in ('RGB', 'RGBA') else 95
-		draw.text((tnSize[0] - tw - 2, tnSize[1] - th - 5), text, font=font, fill=font_color) # pyright: ignore[reportUnknownMemberType]
+		draw.text((tnWidthHeight[0] - tw - 2, tnWidthHeight[1] - th - 5), text, font=font, fill=font_color) # pyright: ignore[reportUnknownMemberType]
 
 		# sharpen
 		canvas = ImageEnhance.Sharpness(canvas).enhance(factor=1.7)
 	except Exception:
 		log(f'Exception at "make a thumbnail": {traceback.format_exc()}')
-		canvas = Image.new('RGB', tnSize)
+		canvas = Image.new('RGB', tnWidthHeight)
 
 	if reqObj.startswith('ffThumb') and os.path.exists(reqObj):
 		os.unlink(reqObj)
@@ -68,8 +68,10 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	buf = io.BytesIO()
 	if canvas.mode == 'RGB':
 		canvas.save(buf, format='jpeg', quality=90, optimize=False, progressive=True, subsampling=1)
+		log('returning jpeg')
 		return buf.getvalue(), 'image/jpeg'
 	else:
 		canvas.save(buf, format='png', optimize=False, compress_level=9)
+		log('returning png')
 		return buf.getvalue(), 'image/png'
 

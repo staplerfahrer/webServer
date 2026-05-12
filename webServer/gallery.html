@@ -35,11 +35,22 @@
 		}
 
 		.dirItem {
+			display       : inline-block;
+			width         : 30%;
 			outline-style : solid;
 			outline-offset: 3px;
 			outline-width : 4px;
 			outline-color : transparent;
 			border-radius : 3px;
+			margin        : 20px 20px;
+		}
+
+		.dirItem > a {
+			color           : #ffdd00;
+			display         : inline-block;
+			width           : 100%;
+			background-color: #00000030;
+			padding         : 10px;
 		}
 
 		#viewBox {
@@ -101,10 +112,8 @@
 		<video id="viewVideo" controls></video>
 	</div>
 	<div id="autoPlayButton"></div>
-
 	<!-- Loads the thumbs object & everything else -->
 	{thumbnailHtml}
-
 	<style>
 		.selection-outline {
 			outline-color: #000000;
@@ -133,6 +142,8 @@
 			lowestPending        : 0,
 		};
 
+		thumbs.addViewerState(viewerState);
+
 		var cache          = {};
 		var siblingUrls    = {siblingUrls};
 		var allowDelete    = {allowDelete};
@@ -142,7 +153,6 @@
 		vv = document.getElementById('viewVideo');
 		autoPlayButton = document.getElementById('autoPlayButton');
 
-
 		function buildDom() {
 			document.title = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`;
 			viewerState.dirUrls.forEach((url, i) => addDir(url, i));
@@ -151,7 +161,6 @@
 			document.body.appendChild(br);
 			viewerState.imgUrls.forEach((url, i) => thumbs.add(url, i));
 		}
-
 
 		//#region MARK:cookie stuff
 		function resumeSession() {
@@ -341,7 +350,7 @@
 				vi.style.display = '';
 				vi.style.visibility = 'hidden';
 				vi.src = url;
-				cacheNext();
+				cacheNextImages();
 			}
 			window.location.hash=url;
 		}
@@ -410,18 +419,11 @@
 		function addDir(url, i) {
 			var p = document.createElement('p');
 			var a = document.createElement('a');
-			a.class = 'directory';
 			a.href = url;
 			a.innerText = url;
-			a.style.color = '#ffdd00';
-			a.style.display = 'inline-block';
-			a.style.width = '100%';
-			a.style.backgroundColor = '#00000030';
 			a.onclick = navigate;
-			p.appendChild(a);
 			p.className = 'dirItem';
-			p.style.display = 'inline-block';
-			p.style.width = '40%';
+			p.appendChild(a);
 			document.body.appendChild(p);
 			viewerState.dirElms[url] = p;
 		}
@@ -465,7 +467,7 @@
 			}
 		}
 
-		function cacheNext() {
+		function cacheNextImages() {
 			window.setTimeout(() => {
 				for (var i = 0; i < 10; i++) {
 					var nextIndex = viewerState.viewedIndex + 1 + i;
@@ -479,90 +481,6 @@
 				}
 			}, 500);
 		}
-
-		//////// do the loading
-		function loadVisibleThumbs() {
-			for (var i = viewerState.lowestPending; i < viewerState.imgElms.length; i++) {
-				var img = viewerState.imgElms[i]
-				if (!isVisible(img))
-					continue
-				thumbs.load(i, viewerState)
-			}
-
-			// An optimization.
-			// From top down, while requested: these thumbs are no longer pending.
-			while (viewerState.lowestPending < viewerState.imgElms.length
-					&& viewerState.imgElms[viewerState.lowestPending]._requested)
-				viewerState.lowestPending++
-
-			// schedule next check
-			window.setTimeout(() => {
-				//if (window.busyLoading) return
-				// if (!currentlyScrolling()) return
-				// window.busyLoading = true
-				loadVisibleThumbs()
-				// delete window.busyLoading
-			}, 250)
-		}
-
-		function loadRandomly() {
-			const speed = 1000 / 30
-
-			if (currentlyScrolling())
-				// schedule next
-				return window.setTimeout(loadRandomly, speed)
-
-			let next = viewerState.lowestPending + Math.floor(
-				Math.random() * (viewerState.imgElms.length - viewerState.lowestPending))
-
-			while (next < viewerState.imgElms.length && viewerState.imgElms[next]._requested)
-				next++
-
-			if (next == viewerState.imgElms.length && !viewerState.imgElms.some(x => !x._requested))
-				return console.log(`done randomizing`)
-
-			if (next < viewerState.imgElms.length)
-				thumbs.load(next, viewerState)
-
-			// schedule next
-			window.setTimeout(loadRandomly, speed)
-		}
-
-		// function backgroundLoadThumbs() {
-		// 	window.setInterval(() => {
-		// 		while (viewerState.lowestPending < viewerState.imgElms.length && viewerState.imgElms[viewerState.lowestPending]._requested)
-		// 			viewerState.lowestPending++;
-		// 		if (viewerState.lowestPending >= viewerState.imgElms.length) return;
-
-		// 		// imgElms is in DOM order (top→bottom); find the split point between
-		// 		// above-viewport and below-viewport unrequested items in one pass
-		// 		var visibleTop    = document.documentElement.scrollTop;
-		// 		var visibleBottom = visibleTop + document.documentElement.clientHeight;
-		// 		var loadExtra     = 100;
-		// 		var splitIdx      = viewerState.lowestPending;
-		// 		for (var i = viewerState.lowestPending; i < viewerState.imgElms.length; i++) {
-		// 			var img = viewerState.imgElms[i];
-		// 			if (img._requested) continue;
-		// 			var itemTop    = img.offsetTop;
-		// 			var itemBottom = itemTop + img.height;
-		// 			if (itemBottom > visibleTop - loadExtra && itemTop < visibleBottom + loadExtra) return; // visible pending — wait
-		// 			if (itemBottom <= visibleTop) splitIdx = i + 1;
-		// 		}
-
-		// 		// load from each side, closest to viewport first
-		// 		var aIdx = splitIdx - 1;
-		// 		var bIdx = splitIdx;
-		// 		for (var i = 0; i < 10; i++) {
-		// 			while (aIdx >= viewerState.lowestPending && viewerState.imgElms[aIdx]._requested) aIdx--;
-		// 			while (bIdx < viewerState.imgElms.length && viewerState.imgElms[bIdx]._requested) bIdx++;
-		// 			var aImg = aIdx >= viewerState.lowestPending              ? viewerState.imgElms[aIdx] : null;
-		// 			var bImg = bIdx < viewerState.imgElms.length ? viewerState.imgElms[bIdx] : null;
-		// 			if (!aImg && !bImg) break;
-		// 			if (aImg) { aImg._requested = true; aImg.setAttribute('src', aImg.getAttribute('data-src')); aIdx--; }
-		// 			if (bImg) { bImg._requested = true; bImg.setAttribute('src', bImg.getAttribute('data-src')); bIdx++; }
-		// 		}
-		// 	}, 200);
-		// }
 
 		//#region MARK:user events
 		function bindEvents() {
@@ -744,9 +662,8 @@
 		buildDom();
 		resumeSession();
 		highlightLastDir();
-		loadVisibleThumbs();
-		loadRandomly();
-		// backgroundLoadThumbs();
+		thumbs.loadVisible();
+		thumbs.loadRandomly();
 		bindEvents();
 		borderViewed();
 		//#endregion

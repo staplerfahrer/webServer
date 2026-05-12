@@ -1,32 +1,49 @@
 <style>
 	@keyframes tn-fade {
-		0%   { opacity: 0;    }
-		100% { opacity: 0.75; }
+		0%   { opacity: 0.7; }
+		100% { opacity: 0.3; }
 	}
 
 	.tn {
-		opacity                  : 0;
-		margin                   : 3px;
-		outline-color            : transparent;
-		outline-style            : solid;
-		outline-offset           : -4px;
-		outline-width            : 4px;
+		margin        : 3px;
+		outline-color : transparent;
+		outline-style : solid;
+		outline-offset: 0;
+		outline-width : 4px;
 		/*{thumbnailCss}*/
 	}
 
 	.tn-fade {
-		animation                : tn-fade .3s;
+		animation                : tn-fade .5s;
 		animation-timing-function: ease;
-		animation-fill-mode      : forwards;
+		animation-direction      : alternate;
+		animation-iteration-count: infinite;
+	}
+
+	#thumbnailContainer {
+		display              : grid;
+		grid-template-columns: repeat(auto-fill, /*{thumbnailWidth}*/px);
+		gap                  : 10px;
+		padding              : 10px;
+		justify-content      : space-evenly;
 	}
 </style>
+<div id="thumbnailContainer">
+</div>
 <script>
 	const thumbs = (function(){
 		const ports = {thumbnailPorts}
 
+		let viewerState = {}
+
+		function addViewerState(vs) {
+			viewerState = vs
+		}
+
 		function add(url, i) {
-			var img = document.createElement('img')
-			img.setAttribute('class', 'tn')
+			const img = document.createElement('img')
+			img.classList.add('tn')
+			img.classList.add('tn-fade')
 			img.setAttribute('data-index', i)
 			img.setAttribute('data-src', `${
 				location.protocol}//${
@@ -36,24 +53,73 @@
 			img.setAttribute('src', '/thumbnail-placeholder.png')
 			img.setAttribute('title', url)
 			img.onclick = toggleZoom
-			img.onload = (e) => { e.target._loaded = true }
-			document.body.appendChild(img)
+			const par = document.getElementById('thumbnailContainer')
+			// const par = document.body.appendChild(img)
+			par.appendChild(img)
 			viewerState.imgElms.push(img)
 		}
 
-		function load(i, viewerState) {
-			var img = viewerState.imgElms[i]
+		function load(i) {
+			const img = viewerState.imgElms[i]
 			if (img._requested)
 				return
 			img._requested = true
 			img.setAttribute('src', img.getAttribute('data-src'))
 			img.removeAttribute('data-src')
-			img.classList.add('tn-fade')
+			img.onload = (e) => {
+				e.target._loaded = true
+				e.target.classList.remove('tn-fade')
+			}
+		}
+
+		function loadVisibleThumbs() {
+			const fps = 10
+
+			for (var i = viewerState.lowestPending; i < viewerState.imgElms.length; i++) {
+				var img = viewerState.imgElms[i]
+				if (!isVisible(img))
+					continue
+				load(i)
+			}
+
+			// An optimization.
+			// From top down, while requested: these thumbs are no longer pending.
+			while (viewerState.lowestPending < viewerState.imgElms.length
+					&& viewerState.imgElms[viewerState.lowestPending]._requested)
+				viewerState.lowestPending++
+
+			// schedule next
+			window.setTimeout(loadVisibleThumbs, 1000/fps)
+		}
+
+		function loadThumbsRandomly() {
+			const fps = 60
+
+			if (window.busyScrolling)
+				// schedule next
+				return window.setTimeout(loadThumbsRandomly, fps)
+
+			let next = viewerState.lowestPending + Math.floor(
+				(Math.random() ** 1.3) * (viewerState.imgElms.length - viewerState.lowestPending + 1))
+
+			while (next < viewerState.imgElms.length && viewerState.imgElms[next]._requested)
+				next++
+
+			if (next == viewerState.imgElms.length && !viewerState.imgElms.some(x => !x._requested))
+				return
+
+			if (next < viewerState.imgElms.length)
+				load(next)
+
+			// schedule next
+			window.setTimeout(loadThumbsRandomly, 1000/fps)
 		}
 
 		return {
+			addViewerState: addViewerState,
 			add: add,
-			load: load,
+			loadVisible: loadVisibleThumbs,
+			loadRandomly: loadThumbsRandomly,
 		}
 	})()
 </script>
