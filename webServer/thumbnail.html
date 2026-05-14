@@ -1,37 +1,4 @@
-<style>
-	@keyframes tn-fade {
-		0%   { opacity: 0.7; }
-		100% { opacity: 0.3; }
-	}
-
-	.tn {
-		color         : white;
-		font-size     : 16px;
-		margin        : 3px;
-		outline-color : transparent;
-		outline-style : solid;
-		outline-offset: 0;
-		outline-width : 4px;
-		/*{thumbnailCss}*/
-	}
-
-	.tn-fade {
-		animation                : tn-fade .5s;
-		animation-timing-function: ease;
-		animation-direction      : alternate;
-		animation-iteration-count: infinite;
-	}
-
-	#thumbnailContainer {
-		display              : grid;
-		grid-template-columns: repeat(auto-fill, /*{thumbnailWidth}*/px);
-		gap                  : 10px;
-		padding              : 10px;
-		justify-content      : space-evenly;
-	}
-</style>
-<div id="thumbnailContainer">
-</div>
+<div id="thumbnailContainer"></div>
 <script>
 	const thumbs = (function(){
 		const ports = {thumbnailPorts}

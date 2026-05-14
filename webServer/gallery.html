@@ -4,107 +4,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=0.3">
 	<meta charset="UTF-8">
 	<title>hoard</title>
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-	<!-- #region MARK:style
-	 -->
-	<style>
-		body {
-			/*{galleryBackgroundCss}*/
-			margin         : 0;
-			font-size      : 0;
-			scrollbar-width: auto;
-			user-select    : none;
-		}
-
-		body::-webkit-scrollbar {
-			width: 20px;               /* width of the entire scrollbar */
-		}
-
-		body::-webkit-scrollbar-track {
-			background: #1c1b19;        /* color of the tracking area */
-		}
-
-		body::-webkit-scrollbar-thumb {
-			background-color: #ffdd00;    /* color of the scroll thumb */
-			border-radius   : 5px;       /* roundness of the scroll thumb */
-		}
-
-		body>p {
-			font-size: 16pt;
-			margin   : 10px;
-		}
-
-		.dirItem {
-			display       : inline-block;
-			width         : 30%;
-			outline-style : solid;
-			outline-offset: 3px;
-			outline-width : 4px;
-			outline-color : transparent;
-			border-radius : 3px;
-			margin        : 20px 20px;
-		}
-
-		.dirItem > a {
-			color           : #ffdd00;
-			display         : inline-block;
-			width           : 100%;
-			background-color: #00000030;
-			padding         : 10px;
-		}
-
-		#viewBox {
-			visibility         : hidden;
-			position           : fixed;
-			top                : 0;
-			right              : 0;
-			bottom             : 0;
-			left               : 0;
-			z-index            : 9;
-			display            : flex;
-			/*{viewerBackgroundCss}*/
-			background-size    : cover;
-			background-position: center;
-		}
-
-		#viewVideo {
-			width     : 98vw;
-			height    : auto;
-			max-width : none;
-			max-height: 98vh;
-			object-fit: contain;
-			margin    : auto;
-			display   : none;
-		}
-
-		#viewImg {
-			display   : block;
-			margin    : auto;
-			max-height: 99%;
-			max-width : 99%;
-			border-radius: 10px;
-			/* outline   : 2px solid black; */
-			/* outline-offset: -2px; */
-		}
-
-		#autoPlayButton {
-			position: fixed;
-			z-index: 10;
-			border-radius: 10px;
-			width: 50px;
-			height: 50px;
-			background-color: rgba(255,255,255,0.1);
-			right: 20px;
-			bottom: 20px;
-		}
-
-		#autoPlayButton .autoPlaying {
-			background-color: rgba(255,0,0,0.3);
-		}
-	</style>
-	<style id="slowZoomSheet">
-	</style>
-	<!-- #endregion -->
+	<link rel="icon"       type="image/svg+xml" href="/favicon.svg">
+	<link rel="stylesheet" type="text/css"      href="/style.css">
+	<style id="slowZoomSheet"></style>
 </head>
 <body>
 	<div id="viewBox">
@@ -114,18 +16,13 @@
 	<div id="autoPlayButton"></div>
 	<!-- Loads the thumbs object & everything else -->
 	{thumbnailHtml}
-	<style>
-		.selection-outline {
-			outline-color: #000000;
-			/*{selectionOutlineCss}*/
-		}
-	</style>
+	<div id="directoryContainer"></div>
 	<script>
 		// UI elements
-		var vb             = null;
-		var vi             = null;
-		var vv             = null;
-		var autoPlayButton = null;
+		var vb             = null
+		var vi             = null
+		var vv             = null
+		var autoPlayButton = null
 
 		// UI state
 		var viewerState    = {
@@ -140,230 +37,227 @@
 			viewportUnzoomedScale: window.visualViewport.scale,
 			pageScrollYPos       : null,
 			lowestPending        : 0,
-		};
+		}
 
-		thumbs.addViewerState(viewerState);
+		thumbs.addViewerState(viewerState)
 
-		var cache          = {};
-		var siblingUrls    = {siblingUrls};
-		var allowDelete    = {allowDelete};
+		var cache          = {}
+		var siblingUrls    = {siblingUrls}
+		var allowDelete    = {allowDelete}
 
-		vb = document.getElementById('viewBox');
-		vi = document.getElementById('viewImg');
-		vv = document.getElementById('viewVideo');
-		autoPlayButton = document.getElementById('autoPlayButton');
+		vb = document.getElementById('viewBox')
+		vi = document.getElementById('viewImg')
+		vv = document.getElementById('viewVideo')
+		autoPlayButton = document.getElementById('autoPlayButton')
 
 		function buildDom() {
-			document.title = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`;
-			viewerState.dirUrls.forEach((url, i) => addDir(url, i));
-			var br = document.createElement('br');
-			br.style.clear = 'both';
-			document.body.appendChild(br);
-			viewerState.imgUrls.forEach((url, i) => thumbs.add(url, i));
+			document.title = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`
+			viewerState.dirUrls.forEach(addDir)
+			viewerState.imgUrls.forEach(thumbs.add)
 		}
 
 		//#region MARK:cookie stuff
 		function resumeSession() {
 			if (window.location.search.includes('override')) {
-				updateCookie(window.location.origin + window.location.pathname, 0);
-				return;
+				updateCookie(window.location.origin + window.location.pathname, 0)
+				return
 			}
 			if (!document.cookie) {
 				window.setTimeout(() => {
-					updateCookie(window.location.href, viewerState.viewedIndex);
-				}, 10000);
-				return;
+					updateCookie(window.location.href, viewerState.viewedIndex)
+				}, 10000)
+				return
 			}
 
-			var location = getCookie('location=');
+			var location = getCookie('location=')
 			if (decodeURI(window.location.href) !== decodeURI(location)) {
 				fetch(location).then(r => {
 					if (r.ok) { window.location.href = location; return; }
-					updateCookie(window.location.origin + '/', 0);
-					window.location.href = '/';
+					updateCookie(window.location.origin + '/', 0)
+					window.location.href = '/'
 				}).catch(() => {
-					updateCookie(window.location.origin + '/', 0);
-					window.location.href = '/';
-				});
-				return;
+					updateCookie(window.location.origin + '/', 0)
+					window.location.href = '/'
+				})
+				return
 			}
 
-			var index    = getCookie('viewIndex=i');
+			var index    = getCookie('viewIndex=i')
 			if (viewerState.viewedIndex !== index)
-				viewerState.viewedIndex = Number(index);
+				viewerState.viewedIndex = Number(index)
 		}
 
 		function getCookie(label) {
-			var values = document.cookie.split('; ');
+			var values = document.cookie.split('; ')
 			for (var i = 0; i < values.length; i++) {
-				if (values[i].indexOf(label) === -1) continue;
-				return values[i].replace(label, '');
+				if (values[i].indexOf(label) === -1) continue
+				return values[i].replace(label, '')
 			}
 		}
 
 		function updateCookie(newPath, newIndex, newLastChild) {
 			function setCookie(value) {
-				var cookieTime  = new Date();
-				var now         = cookieTime.getTime();
-				var expireTime  = now + 3660 * 86400 * 1000;
-				cookieTime.setTime(expireTime);
-				var expiresString = cookieTime.toUTCString();
+				var cookieTime  = new Date()
+				var now         = cookieTime.getTime()
+				var expireTime  = now + 3660 * 86400 * 1000
+				cookieTime.setTime(expireTime)
+				var expiresString = cookieTime.toUTCString()
 				var newCookie = (
 					value
 					+ '; path=/'
-					+ '; expires=' + expiresString);
-				document.cookie = newCookie;
+					+ '; expires=' + expiresString)
+				document.cookie = newCookie
 			}
 
 			function clearCookies() {
 				// clear old cookies, from stack overflow
-				var expire = '=;expires=' + new Date().toUTCString() + ';path=/';
+				var expire = '=;expires=' + new Date().toUTCString() + ';path=/'
 				document.cookie.split(';').forEach(c => {
 					document.cookie = c
 						.replace(/^ +/, '')
-						.replace(/=.*/, expire);
+						.replace(/=.*/, expire)
 				});
 			}
 
-			var lastChild = newLastChild !== undefined ? newLastChild : getCookie('lastChild=');
-			clearCookies();
-			setCookie('location=' + newPath);
-			setCookie('viewIndex=i' + newIndex); // can't set it to just 0
-			if (lastChild) setCookie('lastChild=' + lastChild);
+			var lastChild = newLastChild !== undefined ? newLastChild : getCookie('lastChild=')
+			clearCookies()
+			setCookie('location=' + newPath)
+			setCookie('viewIndex=i' + newIndex) // can't set it to just 0
+			if (lastChild) setCookie('lastChild=' + lastChild)
 		}
 		//#endregion
 
 		//#region MARK:view/nav
 		function toggleZoom(e) {
 			if (window.zoomed) {
-				vb.style.visibility = 'hidden';
+				vb.style.visibility = 'hidden'
 
 				// so that on next view, it doesn't show the old image
-				vi.src = '';
-				vi.classList.remove('slowZoom');
+				vi.src = ''
+				vi.classList.remove('slowZoom')
 				// hide both elements
-				vi.style.display = 'none';
-				vv.style.display = 'none';
-				delete window.zoomed;
-				changeAutoPlay('disable');
-				return;
+				vi.style.display = 'none'
+				vv.style.display = 'none'
+				delete window.zoomed
+				changeAutoPlay('disable')
+				return
 			}
 
 			if (e && e.target.tagName === 'IMG') {
 				// if an image was clicked, get the index
-				var clickedImg = e.target;
-				viewerState.viewedIndex = Number(clickedImg.getAttribute('data-index'));
+				var clickedImg = e.target
+				viewerState.viewedIndex = Number(clickedImg.getAttribute('data-index'))
 			}
 
-			window.zoomed = true;
-			vb.style.visibility = 'visible';
-			updateViewed();
+			window.zoomed = true
+			vb.style.visibility = 'visible'
+			updateViewed()
 		}
 
 		function changeAutoPlay(option) {
-			document.getElementById('autoPlayButton').classList.remove('autoPlaying');
+			document.getElementById('autoPlayButton').classList.remove('autoPlaying')
 
 			if (option === 'disable') {
 				if (!window.autoPlay) return; // not running
 				// clear timer
-				if (window.zoomed) toggleZoom();
-				window.clearInterval(window.autoPlay);
-				delete window.autoPlay;
+				if (window.zoomed) toggleZoom()
+				window.clearInterval(window.autoPlay)
+				delete window.autoPlay
 			}
 
 			if (option === 'reset') {
 				if (!window.autoPlay) return; // not running
 				// clear & set new timer
-				window.clearInterval(window.autoPlay);
-				document.getElementById('autoPlayButton').classList.add('autoPlaying');
+				window.clearInterval(window.autoPlay)
+				document.getElementById('autoPlayButton').classList.add('autoPlaying')
 				window.autoPlay = window.setInterval(()=>{
-					viewerState.viewedIndex++;
-					updateViewed();
-				}, {autoPlayTimer});
+					viewerState.viewedIndex++
+					updateViewed()
+				}, {autoPlayTimer})
 			}
 
 			if (option === 'toggle') {
 				if (window.autoPlay) {
 					// running, clear timer
-					if (window.zoomed) toggleZoom();
-					window.clearInterval(window.autoPlay);
-					delete window.autoPlay;
+					if (window.zoomed) toggleZoom()
+					window.clearInterval(window.autoPlay)
+					delete window.autoPlay
 				} else {
 					// not running, set timer
-					if (!window.zoomed) toggleZoom();
-					document.getElementById('autoPlayButton').classList.add('autoPlaying');
+					if (!window.zoomed) toggleZoom()
+					document.getElementById('autoPlayButton').classList.add('autoPlaying')
 					window.autoPlay = window.setInterval(()=>{
-						viewerState.viewedIndex++;
-						updateViewed();
-					}, {autoPlayTimer});
+						viewerState.viewedIndex++
+						updateViewed()
+					}, {autoPlayTimer})
 				}
 			}
 		}
 
 		function imagesPerRow() {
-			if (viewerState.imgElms.length === 0) return 1;
-			var firstTop = viewerState.imgElms[0].offsetTop;
-			var count = 0;
+			if (viewerState.imgElms.length === 0) return 1
+			var firstTop = viewerState.imgElms[0].offsetTop
+			var count = 0
 			for (var i = 0; i < viewerState.imgElms.length; i++) {
-				if (viewerState.imgElms[i].offsetTop !== firstTop) break;
-				count++;
+				if (viewerState.imgElms[i].offsetTop !== firstTop) break
+				count++
 			}
-			return count || 1;
+			return count || 1
 		}
 
 		function updateViewed() {
 			if (viewerState.viewedIndex < 0) {
-				viewerState.viewedIndex = viewerState.imgUrls.length - 1;
+				viewerState.viewedIndex = viewerState.imgUrls.length - 1
 			} else if (viewerState.viewedIndex >= viewerState.imgUrls.length) {
-				viewerState.viewedIndex = 0;
+				viewerState.viewedIndex = 0
 			}
-			updateCookie(window.location.href, viewerState.viewedIndex);
-			borderViewed();
-			if (!window.zoomed) return;
+			updateCookie(window.location.href, viewerState.viewedIndex)
+			borderViewed()
+			if (!window.zoomed) return
 
 			// update & display
-			var url = viewerState.imgUrls[viewerState.viewedIndex];
+			var url = viewerState.imgUrls[viewerState.viewedIndex]
 			if (url.endsWith('.mp4') || url.endsWith('.webm')) {
 				// video
 				// https://stackoverflow.com/questions/5235145/changing-source-on-html5-video-tag
-				vv.style.display = 'inline-block';
-				var vvSources = vv.getElementsByTagName('source');
-				var source = vvSources[0];
+				vv.style.display = 'inline-block'
+				var vvSources = vv.getElementsByTagName('source')
+				var source = vvSources[0]
 				if (!source) {
-					source = document.createElement('source');
-					source.setAttribute('src', url);
-					source.setAttribute('type', 'video/mp4');
-					vv.appendChild(source);
+					source = document.createElement('source')
+					source.setAttribute('src', url)
+					source.setAttribute('type', 'video/mp4')
+					vv.appendChild(source)
 				} else {
-					vv.pause();
-					source.setAttribute('src', url);
-					source.setAttribute('type', 'video/mp4');
-					vv.load();
+					vv.pause()
+					source.setAttribute('src', url)
+					source.setAttribute('type', 'video/mp4')
+					vv.load()
 				}
-				vv.play();
+				vv.play()
 				console.log({
 					src: source.getAttribute('src'),
 					type: source.getAttribute('type'),
-				});
+				})
 			} else {
 				// picture
-				vi.style.display = '';
-				vi.style.visibility = 'hidden';
-				vi.src = url;
-				cacheNextImages();
+				vi.style.display = ''
+				vi.style.visibility = 'hidden'
+				vi.src = url
+				cacheNextImages()
 			}
-			window.location.hash=url;
+			window.location.hash=url
 		}
 
 		function zoomStyle() {
 			// https://alvarotrigo.com/blog/change-css-javascript/
 
 			function recalculateZoomRange() {
-				var xScale = Math.max(window.innerWidth / vi.naturalWidth, 1) * 0.95;
-				var yScale = Math.max(window.innerHeight / vi.naturalHeight, 1) * 0.95;
-				var startScale = Math.min(xScale, yScale);
-				var endScale   = Math.max(xScale, yScale) * 1.1;
-				var zoomSpeed  = ({zoomSpeed} || 1) * endScale / startScale;
+				var xScale = Math.max(window.innerWidth / vi.naturalWidth, 1) * 0.95
+				var yScale = Math.max(window.innerHeight / vi.naturalHeight, 1) * 0.95
+				var startScale = Math.min(xScale, yScale)
+				var endScale   = Math.max(xScale, yScale) * 1.1
+				var zoomSpeed  = ({zoomSpeed} || 1) * endScale / startScale
 				var sheet = `
 					@keyframes slowZoom {
 						0% { transform: scale(`+startScale+`); }
@@ -374,95 +268,94 @@
 						animation-fill-mode: forwards;
 						animation-timing-function: ease-in-out-sine;
 					}
-					`;
-				var e2 = document.createElement('style');
-				e2.appendChild(document.createTextNode(sheet));
-				var e = document.getElementById('slowZoomSheet');
-				e.replaceWith(e2);
-				e2.id = 'slowZoomSheet';
+					`
+				var e2 = document.createElement('style')
+				e2.appendChild(document.createTextNode(sheet))
+				var e = document.getElementById('slowZoomSheet')
+				e.replaceWith(e2)
+				e2.id = 'slowZoomSheet'
 
 				vi.offsetHeight; // reset zoom
-				vi.classList.add('slowZoom');
-				vi.style.visibility = 'visible';
+				vi.classList.add('slowZoom')
+				vi.style.visibility = 'visible'
 			}
 
-			vi.classList.remove('slowZoom');
-			recalculateZoomRange();
+			vi.classList.remove('slowZoom')
+			recalculateZoomRange()
 		}
 
 		function currentlyScrolling() {
-			var scrolling = viewerState.pageScrollYPos !== document.documentElement.scrollTop;
-			viewerState.pageScrollYPos = document.documentElement.scrollTop;
-			return scrolling;
+			var scrolling = viewerState.pageScrollYPos !== document.documentElement.scrollTop
+			viewerState.pageScrollYPos = document.documentElement.scrollTop
+			return scrolling
 		}
 
 		function navigateTo(relUrl) {
-			var absUrl = window.location.origin + relUrl;
+			var absUrl = window.location.origin + relUrl
 
 			// highlight now so bfcache preserves it when hitting back
-			var elm = viewerState.dirElms[relUrl];
-			if (elm) elm.classList.add('selection-outline');
+			var elm = viewerState.dirElms[relUrl]
+			if (elm) elm.classList.add('selection-outline')
 
 			// keep last 2 navigated-to dirs
-			var parts = (getCookie('lastChild=') || '').split('|').filter(Boolean);
-			parts.unshift(relUrl);
-			updateCookie(absUrl, 0, parts.slice(0, 2).join('|'));
-			window.location.href = absUrl;
+			var parts = (getCookie('lastChild=') || '').split('|').filter(Boolean)
+			parts.unshift(relUrl)
+			updateCookie(absUrl, 0, parts.slice(0, 2).join('|'))
+			window.location.href = absUrl
 		}
 
 		function navigate(e) {
-			navigateTo(e.target.getAttribute('href'));
+			navigateTo(e.target.getAttribute('href'))
 		}
 		//#endregion
 
 		//#region MARK:load/cache
 		function addDir(url, i) {
-			var p = document.createElement('p');
-			var a = document.createElement('a');
-			a.href = url;
-			a.innerText = decodeURI(url);
-			a.onclick = navigate;
-			p.className = 'dirItem';
-			p.appendChild(a);
-			document.body.appendChild(p);
-			viewerState.dirElms[url] = p;
+			var a = document.createElement('a')
+			a.href      = url
+			a.innerText = decodeURI(url)
+			a.onclick   = navigate
+			a.className = 'dirItem'
+			let c = document.getElementById('directoryContainer')
+			c.appendChild(a)
+			viewerState.dirElms[url] = a
 		}
 
 		function highlightLastDir() {
-			var lastChild = getCookie('lastChild=');
-			if (!lastChild) return;
-			var scrollTarget = null;
+			var lastChild = getCookie('lastChild=')
+			if (!lastChild) return
+			var scrollTarget = null
 			lastChild.split('|').forEach(function(url) {
-				var elm = viewerState.dirElms[url];
-				if (!elm) return;
-				elm.classList.add('selection-outline');
-				if (!scrollTarget) scrollTarget = elm;
-			});
-			if (scrollTarget) scrollTarget.scrollIntoView();
+				var elm = viewerState.dirElms[url]
+				if (!elm) return
+				elm.classList.add('selection-outline')
+				if (!scrollTarget) scrollTarget = elm
+			})
+			if (scrollTarget) scrollTarget.scrollIntoView()
 		}
 		//#endregion
 
 		function isVisible(x) {
-			var loadExtra      = 100;
+			var loadExtra      = 100
 			// https://stackoverflow.com/questions/4096863/how-to-get-and-set-the-current-web-page-scroll-position
-			var visibleTop     = document.documentElement.scrollTop;
-			var visibleBottom  = document.documentElement.clientHeight+visibleTop;
-			var itemBottom     = x.offsetTop+x.height;
-			var itemTop        = x.offsetTop;
-			var boundaryTop    = visibleTop - loadExtra;
-			var boundaryBottom = visibleBottom + loadExtra;
-			return (itemBottom > boundaryTop && itemTop < boundaryBottom);
+			var visibleTop     = document.documentElement.scrollTop
+			var visibleBottom  = document.documentElement.clientHeight+visibleTop
+			var itemBottom     = x.offsetTop+x.height
+			var itemTop        = x.offsetTop
+			var boundaryTop    = visibleTop - loadExtra
+			var boundaryBottom = visibleBottom + loadExtra
+			return (itemBottom > boundaryTop && itemTop < boundaryBottom)
 		}
 
 		function borderViewed() {
 			for (var i = 0; i < viewerState.imgElms.length; i++) {
-				var x = viewerState.imgElms[i];
-				var iidx = x.getAttribute('data-index');
-				if (iidx === null) continue;
-				x.classList.remove('selection-outline');
+				var x = viewerState.imgElms[i]
+				var iidx = x.getAttribute('data-index')
+				if (iidx === null) continue
+				x.classList.remove('selection-outline')
 				if (iidx == viewerState.viewedIndex) {
-					x.classList.add('selection-outline');
-					document.documentElement.scrollTop = x.offsetTop;
+					x.classList.add('selection-outline')
+					document.documentElement.scrollTop = x.offsetTop
 				}
 			}
 		}
@@ -470,176 +363,176 @@
 		function cacheNextImages() {
 			window.setTimeout(() => {
 				for (var i = 0; i < 10; i++) {
-					var nextIndex = viewerState.viewedIndex + 1 + i;
-					if (nextIndex === viewerState.imgUrls.length) return;
+					var nextIndex = viewerState.viewedIndex + 1 + i
+					if (nextIndex === viewerState.imgUrls.length) return
 
-					var cacheUrl = viewerState.imgUrls[nextIndex];
-					if (cacheUrl in cache) continue;
-					var c = document.createElement('img');
-					c.src = cacheUrl;
-					cache[cacheUrl] = c;
+					var cacheUrl = viewerState.imgUrls[nextIndex]
+					if (cacheUrl in cache) continue
+					var c = document.createElement('img')
+					c.src = cacheUrl
+					cache[cacheUrl] = c
 				}
-			}, 500);
+			}, 500)
 		}
 
 		//#region MARK:user events
 		function bindEvents() {
-			vb.onclick = toggleZoom;
+			vb.onclick = toggleZoom
 
-			vi.onload = zoomStyle;
+			vi.onload = zoomStyle
 
 			document.onkeydown = (x) => {
 				if (x.key == 'ArrowLeft') {
 					if (x.ctrlKey) {
-						var cur = decodeURIComponent(window.location.pathname).replace(/\/$/, '');
-						var idx = siblingUrls.indexOf(cur);
-						if (idx > 0) navigateTo(siblingUrls[idx - 1]);
+						var cur = window.location.pathname; // ??? -> decodeURIComponent(window.location.pathname).replace(/\/$/, '')
+						var idx = siblingUrls.indexOf(cur)
+						if (idx > 0) navigateTo(siblingUrls[idx - 1])
 					} else {
-						viewerState.viewedIndex--;
-						changeAutoPlay('reset');
-						updateViewed();
+						viewerState.viewedIndex--
+						changeAutoPlay('reset')
+						updateViewed()
 					}
 				}
 				if (x.key == 'ArrowRight') {
 					if (x.ctrlKey) {
-						var cur = decodeURIComponent(window.location.pathname).replace(/\/$/, '');
-						var idx = siblingUrls.indexOf(cur);
-						if (idx !== -1 && idx < siblingUrls.length - 1) navigateTo(siblingUrls[idx + 1]);
+						var cur = window.location.pathname; // ??? -> decodeURIComponent(window.location.pathname).replace(/\/$/, '')
+						var idx = siblingUrls.indexOf(cur)
+						if (idx !== -1 && idx < siblingUrls.length - 1) navigateTo(siblingUrls[idx + 1])
 					} else {
-						viewerState.viewedIndex++;
-						changeAutoPlay('reset');
-						updateViewed();
+						viewerState.viewedIndex++
+						changeAutoPlay('reset')
+						updateViewed()
 					}
 				}
 				if (x.key == 'ArrowUp') {
-					x.preventDefault();
-					viewerState.viewedIndex -= imagesPerRow();
-					changeAutoPlay('reset');
-					updateViewed();
+					x.preventDefault()
+					viewerState.viewedIndex -= imagesPerRow()
+					changeAutoPlay('reset')
+					updateViewed()
 				}
 				if (x.key == 'ArrowDown') {
-					x.preventDefault();
-					viewerState.viewedIndex += imagesPerRow();
-					changeAutoPlay('reset');
-					updateViewed();
+					x.preventDefault()
+					viewerState.viewedIndex += imagesPerRow()
+					changeAutoPlay('reset')
+					updateViewed()
 				}
 				if (x.key == 'Escape' || x.key == 'Enter') {
-					toggleZoom();
+					toggleZoom()
 				}
 				if (x.key == 'Delete' && allowDelete && window.zoomed) {
-					var url = viewerState.imgUrls[viewerState.viewedIndex];
+					var url = viewerState.imgUrls[viewerState.viewedIndex]
 					if (confirm('Delete ' + url + '?')) {
 						fetch(url + '?del').then(r => r.text()).then(result => {
 							if (result !== 'ok') { alert('Delete failed: ' + result); return; }
-							var idx = viewerState.viewedIndex;
-							viewerState.imgElms[idx].remove();
-							viewerState.imgElms.splice(idx, 1);
-							viewerState.imgUrls.splice(idx, 1);
-							if (idx < viewerState.lowestPending) viewerState.lowestPending--;
+							var idx = viewerState.viewedIndex
+							viewerState.imgElms[idx].remove()
+							viewerState.imgElms.splice(idx, 1)
+							viewerState.imgUrls.splice(idx, 1)
+							if (idx < viewerState.lowestPending) viewerState.lowestPending--
 							for (var i = idx; i < viewerState.imgElms.length; i++)
-								viewerState.imgElms[i].setAttribute('data-index', i);
+								viewerState.imgElms[i].setAttribute('data-index', i)
 							if (viewerState.imgUrls.length === 0) { toggleZoom(); return; }
 							if (viewerState.viewedIndex >= viewerState.imgUrls.length)
-								viewerState.viewedIndex = viewerState.imgUrls.length - 1;
-							updateViewed();
-						});
+								viewerState.viewedIndex = viewerState.imgUrls.length - 1
+							updateViewed()
+						})
 					}
 				}
 				if (x.key == 'e') {
-					fetch(viewerState.imgUrls[viewerState.viewedIndex] + '?explorer');
+					fetch(viewerState.imgUrls[viewerState.viewedIndex] + '?explorer')
 				}
 				if (x.key == 'f') {
 					// todo: not nice, use global state object
 					// todo: esc doesn't stop the video
-					var fe = document.fullscreenElement;
+					var fe = document.fullscreenElement
 					if (!fe) {
-						vv.requestFullscreen();
+						vv.requestFullscreen()
 					} else {
-						document.exitFullscreen();
+						document.exitFullscreen()
 					}
 				}
 			}
 
 			//////// horizontal scrolling
 			document.onwheel = (x) => {
-				if (window.busyScrolling) return;
+				if (window.busyScrolling) return
 
-				var delta = window.zoomed ? x.deltaY : x.deltaX;
-				if (window.zoomed) x.preventDefault();
+				var delta = window.zoomed ? x.deltaY : x.deltaX
+				if (window.zoomed) x.preventDefault()
 
 				if (delta > 0) {
-					window.busyScrolling = true;
-					viewerState.viewedIndex++;
-					changeAutoPlay('reset');
-					updateViewed();
+					window.busyScrolling = true
+					viewerState.viewedIndex++
+					changeAutoPlay('reset')
+					updateViewed()
 				}
 				if (delta < 0) {
-					window.busyScrolling = true;
-					viewerState.viewedIndex--;
-					changeAutoPlay('reset');
-					updateViewed();
+					window.busyScrolling = true
+					viewerState.viewedIndex--
+					changeAutoPlay('reset')
+					updateViewed()
 				}
 
 				if (window.busyScrolling) {
 					window.setTimeout(() => {
-						delete window.busyScrolling;
-					}, 500);
+						delete window.busyScrolling
+					}, 500)
 				}
 			}
 
 			// autoPlay
 			autoPlayButton.onclick = () => {
 				// if (window.innerWidth == screen.width && window.innerHeight == screen.height) {
-				// 	document.exitFullscreen();
+				// 	document.exitFullscreen()
 				// } else {
-				// 	document.body.requestFullscreen();
+				// 	document.body.requestFullscreen()
 				// }
-				changeAutoPlay('toggle');
-			};
+				changeAutoPlay('toggle')
+			}
 
 			//////// Touch events
-			var touchDownX = null;
-			var touchDownY = null;
+			var touchDownX = null
+			var touchDownY = null
 
 			function getTouches(evt) {
-				return evt.touches;
+				return evt.touches
 			}
 
 			function handleTouchStart(evt) {
-				const firstTouch = getTouches(evt)[0];
-				touchDownX = firstTouch.clientX;
-				touchDownY = firstTouch.clientY;
+				const firstTouch = getTouches(evt)[0]
+				touchDownX = firstTouch.clientX
+				touchDownY = firstTouch.clientY
 			}
 
 			function handleTouchMove(evt) {
-				var deadZone = 10;
-				var isZoomed = window.visualViewport.scale > viewerState.viewportUnzoomedScale;
+				var deadZone = 10
+				var isZoomed = window.visualViewport.scale > viewerState.viewportUnzoomedScale
 
 				if (!touchDownX || !touchDownY || isZoomed) {
-					return;
+					return
 				}
 
-				var xUp = evt.touches[0].clientX;
-				var yUp = evt.touches[0].clientY;
+				var xUp = evt.touches[0].clientX
+				var yUp = evt.touches[0].clientY
 
-				var xDiff = touchDownX - xUp;
-				var yDiff = touchDownY - yUp;
+				var xDiff = touchDownX - xUp
+				var yDiff = touchDownY - yUp
 
 				if (Math.abs(xDiff) < deadZone
 						|| Math.abs(yDiff) < deadZone) {
-					return;
+					return
 				}
 
 				if (Math.abs(xDiff) > Math.abs(yDiff)) {
 					// horizontal distance greater
 					if (xDiff > 0) {
 						// swiping right
-						viewerState.viewedIndex++;
-						updateViewed();
+						viewerState.viewedIndex++
+						updateViewed()
 					} else {
 						// swiping left
-						viewerState.viewedIndex--;
-						updateViewed();
+						viewerState.viewedIndex--
+						updateViewed()
 					}
 				} else {
 					// vertical distance greater
@@ -649,23 +542,23 @@
 						// swiping up
 					}
 				}
-				touchDownX = null;
-				touchDownY = null;
+				touchDownX = null
+				touchDownY = null
 			}
 
-			document.ontouchstart = handleTouchStart;
-			document.ontouchmove  = handleTouchMove;
+			document.ontouchstart = handleTouchStart
+			document.ontouchmove  = handleTouchMove
 		}
 		//#endregion
 
 		//#region MARK:boot the UI
-		buildDom();
-		resumeSession();
-		highlightLastDir();
-		thumbs.loadVisible();
-		thumbs.loadRandomly();
-		bindEvents();
-		borderViewed();
+		buildDom()
+		resumeSession()
+		highlightLastDir()
+		thumbs.loadVisible()
+		thumbs.loadRandomly()
+		bindEvents()
+		borderViewed()
 		//#endregion
 	</script>
 </body>

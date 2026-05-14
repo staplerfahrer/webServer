@@ -1,10 +1,13 @@
 from time import perf_counter
 import json
 import os
+import re
 
 from config import config
 from log import log
 import filesystem as fs
+
+BLOCK_LIST = [r'\\thumbs.db$', r'.deleted$']
 
 def run(server_path: str) -> tuple[bytes, str]:
 	t = perf_counter()
@@ -24,9 +27,11 @@ def run(server_path: str) -> tuple[bytes, str]:
 		objs = list(itr)
 	tick('scandir')
 
+	objs = [o for o in objs if not _is_blocked(o.path)]
+
 	dir_list    = [os.path.join(req_obj, d.name) for d in objs if d.is_dir()]
 	tick('dirList')
-	file_list   = [os.path.join(req_obj, f.name) for f in objs if f.is_file() and fs.is_picture(f.name)]
+	file_list   = [os.path.join(req_obj, f.name) for f in objs if f.is_file()] # and fs.is_picture(f.name)]
 	tick('fileList')
 	server_dirs = parent_path + sorted(dir_list)
 	tick('serverDirs')
@@ -49,9 +54,7 @@ def run(server_path: str) -> tuple[bytes, str]:
 	tick('read thumbnail_html')
 	data = (gallery_html
 		.replace(b'{thumbnailHtml}', thumbnail_html)
-		.replace(b'/*{thumbnailCss}*/', bytes(config('thumbnailCss'), 'utf-8'))
 		.replace(b'{thumbnailPorts}', bytes(json.dumps(config('thumbnailPorts')), 'utf-8'))
-		.replace(b'/*{thumbnailWidth}*/', bytes(str(config('thumbWidthHeight')[0]), 'utf-8'))
 		)
 
 	data = (data
@@ -61,11 +64,13 @@ def run(server_path: str) -> tuple[bytes, str]:
 		.replace(b'{imgUrls}', bytes(json.dumps(img_urls), 'utf-8'))
 		.replace(b'{siblingUrls}', bytes(json.dumps(sibling_urls), 'utf-8'))
 		.replace(b'{zoomSpeed}', bytes(config('zoomSpeed'), 'utf-8'))
-		.replace(b'/*{galleryBackgroundCss}*/', bytes(config('galleryBackgroundCss'), 'utf-8'))
-		.replace(b'/*{selectionOutlineCss}*/', bytes(config('selectionOutlineCss'), 'utf-8'))
-		.replace(b'/*{viewerBackgroundCss}*/', bytes(config('viewerBackgroundCss'), 'utf-8'))
 		)
 	tick('template')
 
 	return data, 'text/html'
 
+
+def _is_blocked(path: str):
+	for p in BLOCK_LIST:
+		if re.search(p, path):
+			return True

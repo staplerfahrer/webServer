@@ -10,6 +10,9 @@ from config import config
 from log import log
 
 
+SHARPEN = 1.3
+
+
 def run(serverPath: str) -> tuple[bytes, str]:
 	log(f'handle_thumbnail {serverPath}')
 	tnWidthHeight = config('thumbWidthHeight')
@@ -59,7 +62,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		draw.text((tnWidthHeight[0] - tw - 2, tnWidthHeight[1] - th - 5), text, font=font, fill=font_color) # pyright: ignore[reportUnknownMemberType]
 
 		# sharpen
-		canvas = ImageEnhance.Sharpness(canvas).enhance(factor=1.7)
+		canvas = ImageEnhance.Sharpness(canvas).enhance(factor=SHARPEN)
 	except Exception:
 		log(f'Exception at "make a thumbnail": {traceback.format_exc()}')
 		reqObj = 'resources\\thumbnail-bad-picture.png'

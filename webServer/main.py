@@ -86,7 +86,6 @@ def listen(address: str, port: int):
 				# https://stackoverflow.com/questions/20289981/python-sockets-stop-recv-from-hanging
 				req = str(conn.recv(1_048_576), 'utf-8')
 				if req == '':
-					log('blank request')
 					continue
 				if '?tn HTTP/1.1' in req:
 					thumbnailQueue.append((conn, req))

@@ -8,6 +8,7 @@ import handle_file
 import handle_thumbnail
 from log import log
 from config import config
+from resources import resource
 
 
 def build_response_bytes(req: str) -> bytes:
@@ -15,12 +16,11 @@ def build_response_bytes(req: str) -> bytes:
 	req_server_path       = fs.to_server_path(req)
 	end                   = None
 
-	if req == '/favicon.ico' or req == '/favicon.svg':
-		data, mime = fs.read_file_bytes('resources/favicon.svg')[0], 'image/svg+xml'
+	if resource(req):
+		log('resource')
+		data, mime = resource(req)
 	elif req.startswith('/.well-known'):
 		data, mime = b'', 'text/plain'
-	elif req == '/thumbnail-placeholder.png':
-		data, mime = fs.read_file_bytes('resources/thumbnail-placeholder.png')[0], 'image/png'
 	elif os.path.isdir(req_server_path):
 		data, mime = handle_directory.run(req_server_path)
 	elif req_server_path.endswith('?tn'): # remove ?tn
