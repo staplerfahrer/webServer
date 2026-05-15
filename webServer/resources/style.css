@@ -1,7 +1,8 @@
 body {
 	background-color     : oklch(0.2864 0.0038 82.79);
+	color                : #775d07;
 	margin               : 0;
-	font-size            : 0;
+	font-size            : 24px;
 	scrollbar-width      : auto;
 	user-select          : none;
 	background-repeat    : no-repeat;
@@ -10,25 +11,16 @@ body {
 }
 
 body::-webkit-scrollbar {
-	/* width of the entire scrollbar */
 	width: 20px;
 }
 
 body::-webkit-scrollbar-track {
-	/* color of the tracking area */
 	background: #1c1b19;
 }
 
 body::-webkit-scrollbar-thumb {
-	/* color of the scroll thumb */
-	background-color: #c09300;
-	/* roundness of the scroll thumb */
+	background-color: #775d07;
 	border-radius   : 3px;
-}
-
-body>p {
-	font-size: 16pt;
-	margin   : 10px;
 }
 
 .dirItem {
@@ -42,7 +34,6 @@ body>p {
 	outline-offset  : 0;
 	outline-width   : 4px;
 	outline-color   : transparent;
-	font-size       : 20px;
 	color           : #c09300;
 }
 
@@ -54,14 +45,13 @@ body>p {
 .tn {
 	opacity       : 70%;
 	color         : white;
-	font-size     : 16px;
 	margin        : 3px;
 	outline-color : transparent;
 	outline-style : solid;
 	outline-offset: 0;
 	outline-width : 4px;
-	width         : 400px; /* <-- */
-	height        : 400px; /* <-- */
+	width         : 400px; /* <-- *//*{thumbnailWidth}*/
+	height        : 400px; /* <-- *//*{thumbnailWidth}*/
 	border-radius : 4px;
 }
 
@@ -72,13 +62,27 @@ body>p {
 	animation-iteration-count: infinite;
 }
 
+#titleContainer {
+	padding   : 30px;
+	text-align: center;
+}
+
 #thumbnailContainer {
-	/*{thumbnailWidth}*/
 	display              : grid;
-	grid-template-columns: repeat(auto-fill, 400px); /* <-- */
+	grid-template-columns: repeat(auto-fill, 400px); /* <-- *//*{thumbnailWidth}*/
 	gap                  : 10px;
 	padding              : 10px;
 	justify-content      : space-evenly;
+}
+
+#navigationContainer {
+	text-align: center;
+	font-size: 40px;
+}
+
+#navigationContainer > a, #navigationContainer > a:visited {
+	text-decoration: none;
+	color: inherit;
 }
 
 .selection-outline {

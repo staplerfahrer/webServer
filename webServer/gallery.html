@@ -14,18 +14,21 @@
 		<video id="viewVideo" controls></video>
 	</div>
 	<div id="autoPlayButton"></div>
+	<div id="titleContainer"></div>
+	<div id="thumbnailContainer"></div>
+	<div id="navigationContainer"><a id="navPrevious">&larr;</a> <a id="navUp">&uarr;</a> <a id="navNext">&rarr;</a></div>
+	<div id="directoryContainer"></div>
 	<!-- Loads the thumbs object & everything else -->
 	{thumbnailHtml}
-	<div id="directoryContainer"></div>
 	<script>
 		// UI elements
-		var vb             = null
-		var vi             = null
-		var vv             = null
-		var autoPlayButton = null
+		let vb             = null
+		let vi             = null
+		let vv             = null
+		let autoPlayButton = null
 
 		// UI state
-		var viewerState    = {
+		const viewerState = {
 			playState            : 'galleryMode', // galleryMode, viewMode, autoPlayMode
 			autoPlay             : 0,
 			viewing              : false,
@@ -41,9 +44,9 @@
 
 		thumbs.addViewerState(viewerState)
 
-		var cache          = {}
-		var siblingUrls    = {siblingUrls}
-		var allowDelete    = {allowDelete}
+		let cache          = {}
+		let siblingUrls    = {siblingUrls}
+		let allowDelete    = {allowDelete}
 
 		vb = document.getElementById('viewBox')
 		vi = document.getElementById('viewImg')
@@ -51,9 +54,29 @@
 		autoPlayButton = document.getElementById('autoPlayButton')
 
 		function buildDom() {
-			document.title = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`
+			const title1 = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`
+			document.title = title1
+
+			const title2 = `${decodeURIComponent(window.location.pathname)} — ${viewerState.imgUrls.length} files`
+			document.getElementById('titleContainer').innerText = title2
+
 			viewerState.dirUrls.forEach(addDir)
 			viewerState.imgUrls.forEach(thumbs.add)
+			let cur = window.location.pathname;
+			let idx = siblingUrls.indexOf(cur)
+
+			if (idx > 0) {
+				document.getElementById('navPrevious').onclick = ()=>{navigateTo(siblingUrls[idx - 1]); return false}
+				document.getElementById('navPrevious').href = siblingUrls[idx - 1]
+			}
+
+			document.getElementById('navUp').onclick = ()=>{navigateTo(viewerState.dirUrls[0]); return false}
+			document.getElementById('navUp').href = viewerState.dirUrls[0]
+
+			if (idx !== -1 && idx < siblingUrls.length - 1) {
+				document.getElementById('navNext').onclick = ()=>{navigateTo(siblingUrls[idx + 1]); return false}
+				document.getElementById('navNext').href = siblingUrls[idx + 1]
+			}
 		}
 
 		//#region MARK:cookie stuff
@@ -69,7 +92,7 @@
 				return
 			}
 
-			var location = getCookie('location=')
+			let location = getCookie('location=')
 			if (decodeURI(window.location.href) !== decodeURI(location)) {
 				fetch(location).then(r => {
 					if (r.ok) { window.location.href = location; return; }
@@ -82,14 +105,14 @@
 				return
 			}
 
-			var index    = getCookie('viewIndex=i')
+			let index = getCookie('viewIndex=i')
 			if (viewerState.viewedIndex !== index)
 				viewerState.viewedIndex = Number(index)
 		}
 
 		function getCookie(label) {
-			var values = document.cookie.split('; ')
-			for (var i = 0; i < values.length; i++) {
+			let values = document.cookie.split('; ')
+			for (let i = 0; i < values.length; i++) {
 				if (values[i].indexOf(label) === -1) continue
 				return values[i].replace(label, '')
 			}
@@ -97,12 +120,12 @@
 
 		function updateCookie(newPath, newIndex, newLastChild) {
 			function setCookie(value) {
-				var cookieTime  = new Date()
-				var now         = cookieTime.getTime()
-				var expireTime  = now + 3660 * 86400 * 1000
+				let cookieTime  = new Date()
+				let now         = cookieTime.getTime()
+				let expireTime  = now + 3660 * 86400 * 1000
 				cookieTime.setTime(expireTime)
-				var expiresString = cookieTime.toUTCString()
-				var newCookie = (
+				let expiresString = cookieTime.toUTCString()
+				let newCookie = (
 					value
 					+ '; path=/'
 					+ '; expires=' + expiresString)
@@ -111,7 +134,7 @@
 
 			function clearCookies() {
 				// clear old cookies, from stack overflow
-				var expire = '=;expires=' + new Date().toUTCString() + ';path=/'
+				let expire = '=;expires=' + new Date().toUTCString() + ';path=/'
 				document.cookie.split(';').forEach(c => {
 					document.cookie = c
 						.replace(/^ +/, '')
@@ -119,7 +142,7 @@
 				});
 			}
 
-			var lastChild = newLastChild !== undefined ? newLastChild : getCookie('lastChild=')
+			let lastChild = newLastChild !== undefined ? newLastChild : getCookie('lastChild=')
 			clearCookies()
 			setCookie('location=' + newPath)
 			setCookie('viewIndex=i' + newIndex) // can't set it to just 0
@@ -145,7 +168,7 @@
 
 			if (e && e.target.tagName === 'IMG') {
 				// if an image was clicked, get the index
-				var clickedImg = e.target
+				let clickedImg = e.target
 				viewerState.viewedIndex = Number(clickedImg.getAttribute('data-index'))
 			}
 
@@ -196,9 +219,9 @@
 
 		function imagesPerRow() {
 			if (viewerState.imgElms.length === 0) return 1
-			var firstTop = viewerState.imgElms[0].offsetTop
-			var count = 0
-			for (var i = 0; i < viewerState.imgElms.length; i++) {
+			let firstTop = viewerState.imgElms[0].offsetTop
+			let count = 0
+			for (let i = 0; i < viewerState.imgElms.length; i++) {
 				if (viewerState.imgElms[i].offsetTop !== firstTop) break
 				count++
 			}
@@ -216,13 +239,13 @@
 			if (!window.zoomed) return
 
 			// update & display
-			var url = viewerState.imgUrls[viewerState.viewedIndex]
+			let url = viewerState.imgUrls[viewerState.viewedIndex]
 			if (url.endsWith('.mp4') || url.endsWith('.webm')) {
 				// video
 				// https://stackoverflow.com/questions/5235145/changing-source-on-html5-video-tag
 				vv.style.display = 'inline-block'
-				var vvSources = vv.getElementsByTagName('source')
-				var source = vvSources[0]
+				let vvSources = vv.getElementsByTagName('source')
+				let source = vvSources[0]
 				if (!source) {
 					source = document.createElement('source')
 					source.setAttribute('src', url)
@@ -253,12 +276,12 @@
 			// https://alvarotrigo.com/blog/change-css-javascript/
 
 			function recalculateZoomRange() {
-				var xScale = Math.max(window.innerWidth / vi.naturalWidth, 1) * 0.95
-				var yScale = Math.max(window.innerHeight / vi.naturalHeight, 1) * 0.95
-				var startScale = Math.min(xScale, yScale)
-				var endScale   = Math.max(xScale, yScale) * 1.1
-				var zoomSpeed  = ({zoomSpeed} || 1) * endScale / startScale
-				var sheet = `
+				let xScale = Math.max(window.innerWidth / vi.naturalWidth, 1) * 0.95
+				let yScale = Math.max(window.innerHeight / vi.naturalHeight, 1) * 0.95
+				let startScale = Math.min(xScale, yScale)
+				let endScale   = Math.max(xScale, yScale) * 1.1
+				let zoomSpeed  = ({zoomSpeed} || 1) * endScale / startScale
+				let sheet = `
 					@keyframes slowZoom {
 						0% { transform: scale(`+startScale+`); }
 						100% { transform: scale(`+endScale+`); }
@@ -269,9 +292,9 @@
 						animation-timing-function: ease-in-out-sine;
 					}
 					`
-				var e2 = document.createElement('style')
+				let e2 = document.createElement('style')
 				e2.appendChild(document.createTextNode(sheet))
-				var e = document.getElementById('slowZoomSheet')
+				let e = document.getElementById('slowZoomSheet')
 				e.replaceWith(e2)
 				e2.id = 'slowZoomSheet'
 
@@ -285,20 +308,20 @@
 		}
 
 		function currentlyScrolling() {
-			var scrolling = viewerState.pageScrollYPos !== document.documentElement.scrollTop
+			let scrolling = viewerState.pageScrollYPos !== document.documentElement.scrollTop
 			viewerState.pageScrollYPos = document.documentElement.scrollTop
 			return scrolling
 		}
 
 		function navigateTo(relUrl) {
-			var absUrl = window.location.origin + relUrl
+			let absUrl = window.location.origin + relUrl
 
 			// highlight now so bfcache preserves it when hitting back
-			var elm = viewerState.dirElms[relUrl]
+			let elm = viewerState.dirElms[relUrl]
 			if (elm) elm.classList.add('selection-outline')
 
 			// keep last 2 navigated-to dirs
-			var parts = (getCookie('lastChild=') || '').split('|').filter(Boolean)
+			let parts = (getCookie('lastChild=') || '').split('|').filter(Boolean)
 			parts.unshift(relUrl)
 			updateCookie(absUrl, 0, parts.slice(0, 2).join('|'))
 			window.location.href = absUrl
@@ -311,7 +334,7 @@
 
 		//#region MARK:load/cache
 		function addDir(url, i) {
-			var a = document.createElement('a')
+			let a = document.createElement('a')
 			a.href      = url
 			a.innerText = decodeURI(url)
 			a.onclick   = navigate
@@ -322,11 +345,11 @@
 		}
 
 		function highlightLastDir() {
-			var lastChild = getCookie('lastChild=')
+			let lastChild = getCookie('lastChild=')
 			if (!lastChild) return
-			var scrollTarget = null
+			let scrollTarget = null
 			lastChild.split('|').forEach(function(url) {
-				var elm = viewerState.dirElms[url]
+				let elm = viewerState.dirElms[url]
 				if (!elm) return
 				elm.classList.add('selection-outline')
 				if (!scrollTarget) scrollTarget = elm
@@ -336,39 +359,38 @@
 		//#endregion
 
 		function isVisible(x) {
-			var loadExtra      = 100
+			let loadExtra      = 100
 			// https://stackoverflow.com/questions/4096863/how-to-get-and-set-the-current-web-page-scroll-position
-			var visibleTop     = document.documentElement.scrollTop
-			var visibleBottom  = document.documentElement.clientHeight+visibleTop
-			var itemBottom     = x.offsetTop+x.height
-			var itemTop        = x.offsetTop
-			var boundaryTop    = visibleTop - loadExtra
-			var boundaryBottom = visibleBottom + loadExtra
+			let visibleTop     = document.documentElement.scrollTop
+			let visibleBottom  = document.documentElement.clientHeight + visibleTop
+			let itemBottom     = x.offsetTop + x.height
+			let itemTop        = x.offsetTop
+			let boundaryTop    = visibleTop - loadExtra
+			let boundaryBottom = visibleBottom + loadExtra
 			return (itemBottom > boundaryTop && itemTop < boundaryBottom)
 		}
 
 		function borderViewed() {
-			for (var i = 0; i < viewerState.imgElms.length; i++) {
-				var x = viewerState.imgElms[i]
-				var iidx = x.getAttribute('data-index')
-				if (iidx === null) continue
-				x.classList.remove('selection-outline')
-				if (iidx == viewerState.viewedIndex) {
-					x.classList.add('selection-outline')
-					document.documentElement.scrollTop = x.offsetTop
+			for (let i = 0; i < viewerState.imgElms.length; i++) {
+				const elmtAtIdx = viewerState.imgElms[i]
+				const elmtDataIdx = elmtAtIdx.getAttribute('data-index')
+				elmtAtIdx.classList.remove('selection-outline')
+				if (elmtDataIdx == viewerState.viewedIndex) {
+					elmtAtIdx.classList.add('selection-outline')
+					document.documentElement.scrollTop = Math.max(elmtAtIdx.offsetTop - 200, 0)
 				}
 			}
 		}
 
 		function cacheNextImages() {
 			window.setTimeout(() => {
-				for (var i = 0; i < 10; i++) {
-					var nextIndex = viewerState.viewedIndex + 1 + i
+				for (let i = 0; i < 10; i++) {
+					let nextIndex = viewerState.viewedIndex + 1 + i
 					if (nextIndex === viewerState.imgUrls.length) return
 
-					var cacheUrl = viewerState.imgUrls[nextIndex]
+					let cacheUrl = viewerState.imgUrls[nextIndex]
 					if (cacheUrl in cache) continue
-					var c = document.createElement('img')
+					let c = document.createElement('img')
 					c.src = cacheUrl
 					cache[cacheUrl] = c
 				}
@@ -384,8 +406,8 @@
 			document.onkeydown = (x) => {
 				if (x.key == 'ArrowLeft') {
 					if (x.ctrlKey) {
-						var cur = window.location.pathname; // ??? -> decodeURIComponent(window.location.pathname).replace(/\/$/, '')
-						var idx = siblingUrls.indexOf(cur)
+						let cur = window.location.pathname;
+						let idx = siblingUrls.indexOf(cur)
 						if (idx > 0) navigateTo(siblingUrls[idx - 1])
 					} else {
 						viewerState.viewedIndex--
@@ -395,8 +417,8 @@
 				}
 				if (x.key == 'ArrowRight') {
 					if (x.ctrlKey) {
-						var cur = window.location.pathname; // ??? -> decodeURIComponent(window.location.pathname).replace(/\/$/, '')
-						var idx = siblingUrls.indexOf(cur)
+						let cur = window.location.pathname;
+						let idx = siblingUrls.indexOf(cur)
 						if (idx !== -1 && idx < siblingUrls.length - 1) navigateTo(siblingUrls[idx + 1])
 					} else {
 						viewerState.viewedIndex++
@@ -420,16 +442,16 @@
 					toggleZoom()
 				}
 				if (x.key == 'Delete' && allowDelete && window.zoomed) {
-					var url = viewerState.imgUrls[viewerState.viewedIndex]
+					let url = viewerState.imgUrls[viewerState.viewedIndex]
 					if (confirm('Delete ' + url + '?')) {
 						fetch(url + '?del').then(r => r.text()).then(result => {
 							if (result !== 'ok') { alert('Delete failed: ' + result); return; }
-							var idx = viewerState.viewedIndex
+							let idx = viewerState.viewedIndex
 							viewerState.imgElms[idx].remove()
 							viewerState.imgElms.splice(idx, 1)
 							viewerState.imgUrls.splice(idx, 1)
 							if (idx < viewerState.lowestPending) viewerState.lowestPending--
-							for (var i = idx; i < viewerState.imgElms.length; i++)
+							for (let i = idx; i < viewerState.imgElms.length; i++)
 								viewerState.imgElms[i].setAttribute('data-index', i)
 							if (viewerState.imgUrls.length === 0) { toggleZoom(); return; }
 							if (viewerState.viewedIndex >= viewerState.imgUrls.length)
@@ -444,7 +466,7 @@
 				if (x.key == 'f') {
 					// todo: not nice, use global state object
 					// todo: esc doesn't stop the video
-					var fe = document.fullscreenElement
+					let fe = document.fullscreenElement
 					if (!fe) {
 						vv.requestFullscreen()
 					} else {
@@ -457,7 +479,7 @@
 			document.onwheel = (x) => {
 				if (window.busyScrolling) return
 
-				var delta = window.zoomed ? x.deltaY : x.deltaX
+				let delta = window.zoomed ? x.deltaY : x.deltaX
 				if (window.zoomed) x.preventDefault()
 
 				if (delta > 0) {
@@ -491,8 +513,8 @@
 			}
 
 			//////// Touch events
-			var touchDownX = null
-			var touchDownY = null
+			let touchDownX = null
+			let touchDownY = null
 
 			function getTouches(evt) {
 				return evt.touches
@@ -505,18 +527,18 @@
 			}
 
 			function handleTouchMove(evt) {
-				var deadZone = 10
-				var isZoomed = window.visualViewport.scale > viewerState.viewportUnzoomedScale
+				let deadZone = 10
+				let isZoomed = window.visualViewport.scale > viewerState.viewportUnzoomedScale
 
 				if (!touchDownX || !touchDownY || isZoomed) {
 					return
 				}
 
-				var xUp = evt.touches[0].clientX
-				var yUp = evt.touches[0].clientY
+				let xUp = evt.touches[0].clientX
+				let yUp = evt.touches[0].clientY
 
-				var xDiff = touchDownX - xUp
-				var yDiff = touchDownY - yUp
+				let xDiff = touchDownX - xUp
+				let yDiff = touchDownY - yUp
 
 				if (Math.abs(xDiff) < deadZone
 						|| Math.abs(yDiff) < deadZone) {
