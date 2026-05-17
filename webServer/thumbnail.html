@@ -8,11 +8,29 @@
 			viewerState = vs
 		}
 
+		function setThumbnailStyle() {
+			const thumbnailWidthHeight = {thumbnailWidthHeight}
+			const sheetContents = document.createTextNode(`
+				.tn {
+					width  : ${thumbnailWidthHeight[0]}px;
+					height : ${thumbnailWidthHeight[1]}px;
+				}
+
+				#thumbnailContainer {
+					grid-template-columns: repeat(auto-fill, ${thumbnailWidthHeight[0]}px);
+				}
+			`)
+			const sheet = document.createElement('style')
+			sheet.appendChild(sheetContents)
+			document.body.appendChild(sheet)
+		}
+
 		function add(url, i) {
 			const img = document.createElement('img')
 			img.classList.add('tn')
 			img.classList.add('tn-fade')
-			img.alt = url
+			img.alt = decodeURIComponent(url)
+			img.title = decodeURIComponent(url)
 			img.setAttribute('data-index', i)
 			img.setAttribute('data-src', `${
 				location.protocol}//${
@@ -20,10 +38,8 @@
 				ports[i % ports.length]}${
 				url}?tn`)
 			img.setAttribute('src', '/thumbnail-placeholder.png')
-			img.setAttribute('title', url)
 			img.onclick = toggleZoom
 			const par = document.getElementById('thumbnailContainer')
-			// const par = document.body.appendChild(img)
 			par.appendChild(img)
 			viewerState.imgElms.push(img)
 		}
@@ -97,6 +113,7 @@
 
 		return {
 			addViewerState: addViewerState,
+			setThumbnailStyle: setThumbnailStyle,
 			add: add,
 			loadVisible: loadVisibleThumbs,
 			loadRandomly: loadThumbsRandomly,

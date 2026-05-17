@@ -55,6 +55,7 @@ def run(server_path: str) -> tuple[bytes, str]:
 	data = (gallery_html
 		.replace(b'{thumbnailHtml}', thumbnail_html)
 		.replace(b'{thumbnailPorts}', bytes(json.dumps(config('thumbnailPorts')), 'utf-8'))
+		.replace(b'{thumbnailWidthHeight}', bytes(json.dumps(config('thumbnailWidthHeight')), 'utf-8'))
 		)
 
 	data = (data

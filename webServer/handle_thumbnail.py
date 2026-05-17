@@ -15,7 +15,7 @@ SHARPEN = 1.3
 
 def run(serverPath: str) -> tuple[bytes, str]:
 	log(f'handle_thumbnail {serverPath}')
-	tnWidthHeight = config('thumbWidthHeight')
+	tnWidthHeight = config('thumbnailWidthHeight')
 	tnColor = config('thumbBackgroundColor')
 	reqObj  = serverPath[:-3]
 	file_name = os.path.split(reqObj)[-1:][0]
@@ -43,8 +43,12 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		text = f'{file_extension}  {img.size[0]} x {img.size[1]}'
 
 		# convert to RGB
-		if img.mode == 'P':
+		if img.mode in ['P', 'CMYK']:
 			img = img.convert('RGB')
+		if img.mode in ['PA', 'LA']:
+			img = img.convert('RGBA')
+		has_alpha = img.mode in ('RGBA', 'LA', 'PA') or \
+			(img.mode == 'P' and 'transparency' in img.info)
 
 		# generate thumbnail
 		# https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.thumbnail
@@ -66,6 +70,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	except Exception:
 		log(f'Exception at "make a thumbnail": {traceback.format_exc()}')
 		reqObj = 'resources\\thumbnail-bad-picture.png'
+		has_alpha = True
 		img  = Image.open(reqObj)
 		text = f'BAD FILE  {file_name}'
 		canvas = Image.new(img.mode, tnWidthHeight, tnColor if img.mode == 'RGB' else 0)
@@ -83,12 +88,12 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		os.unlink(reqObj)
 
 	buf = io.BytesIO()
-	if canvas.mode == 'RGB':
-		canvas.save(buf, format='jpeg', quality=90, optimize=False, progressive=True, subsampling=1)
-		log('returning jpeg')
-		return buf.getvalue(), 'image/jpeg'
-	else:
+	if has_alpha:
 		canvas.save(buf, format='png', optimize=False, compress_level=9)
 		log('returning png')
 		return buf.getvalue(), 'image/png'
+	else:
+		canvas.save(buf, format='jpeg', quality=90, optimize=False, progressive=True, subsampling=1)
+		log('returning jpeg')
+		return buf.getvalue(), 'image/jpeg'
 

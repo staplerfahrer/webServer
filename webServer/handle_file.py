@@ -45,15 +45,21 @@ def _pil_convert(server_path: str) \
 		-> tuple[bytes, str, int | None, int | None, int | None] | None:
 	try:
 		with Image.open(server_path) as img:
+			if img.mode == 'CMYK':
+				img = img.convert('RGB')
+
 			has_alpha = img.mode in ('RGBA', 'LA', 'PA') or \
 				(img.mode == 'P' and 'transparency' in img.info)
+
 			buf = io.BytesIO()
+
 			if has_alpha:
 				img.convert('RGBA').save(buf, format='PNG')
 				mime = 'image/png'
 			else:
 				img.convert('RGB').save(buf, format='JPEG')
 				mime = 'image/jpeg'
+
 			return buf.getvalue(), mime, None, None, None
 	except Exception:
 		log(f'handle_file PIL convert: {traceback.format_exc()}')

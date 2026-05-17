@@ -84,5 +84,10 @@ def _encode(data: bytes, mime: str, range_l: int | None, range_u: int | None, en
 		f'Accept-Ranges: bytes\r\n'
 		f'content-type: {mime}\r\n'
 		f'content-length: {len(data)}\r\n'
-		f'cache-control: max-age={config("cacheSeconds")}\r\n\r\n', 'utf-8') + data
+		f'{_set_cache(mime)}\r\n\r\n', 'utf-8') + data
 
+def _set_cache(mime: str):
+	if mime in ['text/plain', 'text/html']:
+		return f'cache-control: max-age=0'
+	else:
+		return f'cache-control: max-age={config("cacheSeconds")}'

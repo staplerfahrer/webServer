@@ -4,7 +4,7 @@
     "thumbnailPorts"      : [8080, 8081, 8082, 8083, 8084, 8085, 8086, 8087, 8088, 8089],
 	"zoomSpeed"           : "90",
 
-    "thumbWidthHeight"    : [400, 400],
+    "thumbnailWidthHeight": [400, 400],
     "thumbnailCss"        : "width: 400px; height: 400px; border-radius: 4px;",
     "thumbBackgroundColor": "#242321",
     "galleryBackgroundCss": "background-color: oklch(0.2864 0.0038 82.79);",

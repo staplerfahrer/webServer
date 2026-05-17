@@ -27,7 +27,7 @@ MIME: dict[str, str] = {
 
 def to_client_path(file_path: str) -> str:
 	url = file_path.replace(config('root'), '').replace('\\', '/')
-	return urlparse.quote(url) if url else '/'
+	return urlparse.quote(url, safe='/,') if url else '/'
 
 
 def to_server_path(url: str) -> str:
