@@ -33,17 +33,17 @@ def run(server_path: str) -> tuple[bytes, str]:
 	tick('dirList')
 	file_list   = [os.path.join(req_obj, f.name) for f in objs if f.is_file()] # and fs.is_picture(f.name)]
 	tick('fileList')
-	server_dirs = parent_path + sorted(dir_list)
+	server_dirs = parent_path + sorted(dir_list, key=_natural_key)
 	tick('serverDirs')
 	dir_urls    = [fs.to_client_path(d) for d in server_dirs]
 	tick('dirUrls')
-	img_urls    = [fs.to_client_path(f) for f in sorted(file_list)]
+	img_urls    = [fs.to_client_path(f) for f in sorted(file_list, key=_natural_key)]
 	tick('imgUrls')
 
 	sibling_urls: list[str] = []
 	if not is_root:
 		with os.scandir(parent_path[0]) as parent_itr:
-			sibling_urls = sorted([fs.to_client_path(e.path) for e in parent_itr if e.is_dir()])
+			sibling_urls = [fs.to_client_path(e.path) for e in sorted(parent_itr, key=lambda e: _natural_key(e.path)) if e.is_dir()]
 	tick('siblings')
 
 	# produce HTML
@@ -69,6 +69,11 @@ def run(server_path: str) -> tuple[bytes, str]:
 	tick('template')
 
 	return data, 'text/html'
+
+
+def _natural_key(path: str):
+	parts = re.split(r'(\d+)', os.path.basename(path).lower())
+	return [int(p) if p.isdigit() else p for p in parts]
 
 
 def _is_blocked(path: str):

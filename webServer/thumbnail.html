@@ -28,7 +28,7 @@
 		function add(url, i) {
 			const img = document.createElement('img')
 			img.classList.add('tn')
-			img.classList.add('tn-fade')
+			img.classList.add('tn-loading')
 			img.alt = decodeURIComponent(url)
 			img.title = decodeURIComponent(url)
 			img.setAttribute('data-index', i)
@@ -53,17 +53,18 @@
 				img.setAttribute('src', img.getAttribute('data-src'))
 				img.removeAttribute('data-src')
 				img.onload = (e) => {
+					e.target.classList.remove('tn-loading')
+					// e.target.classList.add('tn-fade-in')
 					e.target._loaded = true
-					e.target.classList.remove('tn-fade')
 				}
 				img.onerror = (e) => {
 					console.log(e)
-					img.classList.remove('tn-fade')
+					img.classList.remove('tn-loading')
 					img._loaded = true
 				}
 			} catch (e) {
 				console.log(e)
-				img.classList.remove('tn-fade')
+				img.classList.remove('tn-loading')
 				img._loaded = true
 			}
 		}

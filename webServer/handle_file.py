@@ -23,6 +23,9 @@ def run(server_path: str, range_l: int | None, range_u: int | None) \
 	if not os.path.isfile(server_path):
 		return None
 	ext = os.path.splitext(server_path)[1].lower()
+	if ext in fs.RAW_EXTS:
+		data = fs.dcraw_extract(server_path)
+		return (data, 'image/jpeg', None, None, None) if data else None
 	if ext not in _PIL_EXTS:
 		return _pil_convert(server_path)
 	if ext not in fs.MIME:

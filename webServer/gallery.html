@@ -79,6 +79,7 @@
 			if (cur !== '/') {
 				nu.onclick = ()=>{navigateTo(viewerState.dirUrls[0]); return false}
 				nu.href = viewerState.dirUrls[0]
+				nu.innerText += ' ' + decodeURI(viewerState.dirUrls[0])
 			} else {
 				nu.remove()
 			}
@@ -358,7 +359,7 @@
 			if (i === 0) return
 			let a = document.createElement('a')
 			a.href      = url
-			a.innerText = decodeURI(url)
+			a.innerText = decodeURI(url.split('/').at(-1) || url)
 			a.onclick   = navigate
 			a.className = 'dirItem'
 			let c = document.getElementById('directoryContainer')

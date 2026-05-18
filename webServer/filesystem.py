@@ -1,4 +1,5 @@
 import os
+import subprocess
 import traceback
 import urllib.parse as urlparse
 
@@ -13,6 +14,8 @@ MIME: dict[str, str] = {
 	'.webp': 'image/webp',
 	'.bmp' : 'image/bmp',
 	'.svg' : 'image/svg+xml',
+	'.crw' : 'image/jpeg',
+	'.cr2' : 'image/jpeg',
 	'.mp4' : 'video/mp4',
 	'.m4v' : 'video/mp4',
 	'.mov' : 'video/mp4',
@@ -23,6 +26,16 @@ MIME: dict[str, str] = {
 	'.ogg' : 'audio/ogg',
 	'.wav' : 'audio/wav',
 }
+
+RAW_EXTS = frozenset({'.crw', '.cr2'})
+
+
+def dcraw_extract(server_path: str) -> bytes | None:
+	result = subprocess.run(
+		['resources/dcraw-9.27-ms-64-bit.exe', '-e', '-c', server_path],
+		capture_output=True
+	)
+	return result.stdout if result.returncode == 0 and result.stdout else None
 
 
 def to_client_path(file_path: str) -> str:

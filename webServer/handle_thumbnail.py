@@ -7,6 +7,7 @@ import subprocess
 import traceback
 
 from config import config
+import filesystem as fs
 from log import log
 
 
@@ -36,6 +37,13 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	except Exception as e:
 		if 'not a video' not in e.args:
 			log(f'Exception at "video thumbnail": {traceback.format_exc()}')
+
+	# for RAW files, extract the embedded JPEG via dcraw before PIL opens it
+	raw_ext = os.path.splitext(reqObj)[1].lower() if isinstance(reqObj, str) else ''
+	if raw_ext in fs.RAW_EXTS:
+		raw_bytes = fs.dcraw_extract(reqObj)
+		if raw_bytes:
+			reqObj = io.BytesIO(raw_bytes)
 
 	# make a thumbnail
 	try:
