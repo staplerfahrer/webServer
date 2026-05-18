@@ -7,20 +7,18 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import traceback
 
-
 from config import config
+from log import log
 import handle_request
 import stats
-from log import log
-
 
 THREAD_COUNT = 100
 # TODO: MRU in cookie
 # TODO: fix video player full-screen
 # TODO: fix video player keyboard seek
-
 
 # The thumbnails for every image are already loaded in the browser cache — addImg loaded them to build the gallery. In
 #   updateViewed, instead of immediately hiding vi while the full-res fetches, we could set vi.src to the thumbnail URL
@@ -34,14 +32,30 @@ THREAD_COUNT = 100
 #    one step backward would help a lot too.
 
 queue         : deque[tuple[socket, str]] = deque()
-thumbnailQueue: deque[tuple[socket, str]] = deque()
-busyCount     : int                       = 0
-busyLock      : threading.Lock            = threading.Lock()
+thumbnail_queue: deque[tuple[socket, str]] = deque()
+busy_thread_count     : int                       = 0
+busy_thread_lock      : threading.Lock            = threading.Lock()
+
+
+def check_dependencies():
+	deps = {
+		'dcraw.exe' : 'https://github.com/ncruces/dcraw/releases or https://www.dechifro.org/dcraw/',
+		'ffmpeg.exe': 'https://www.gyan.dev/ffmpeg/builds/ or https://ffmpeg.org/download.html',
+	}
+	show_message = False
+	for exe, url in deps.items():
+		if not os.path.isfile(os.path.join('resources', exe)):
+			print(f'Missing optional program {exe} — download it from {url} and place it in the resources folder.')
+			show_message = True
+
+	if show_message:
+		time.sleep(10)
 
 
 def main():
 	try:
 		os.system('cls')
+		check_dependencies()
 		if config('autoStart'):
 			subprocess.call(['explorer', 'http://127.0.0.1'])
 
@@ -59,13 +73,13 @@ def main():
 				name=f'Listener {config("address")}:{port}',
 				daemon=True).start()
 
-		workerThreads = [threading.Thread(
+		workers = [threading.Thread(
 			target=thread_worker,
-			name=f'Worker Bee {i}')
+			name=f'Worker Thread {i}')
 			for i in range(THREAD_COUNT)]
-		[t.start() for t in workerThreads]
+		[t.start() for t in workers]
 		listen(config('address'), config('port'))
-		[t.join() for t in workerThreads]
+		[t.join() for t in workers]
 	except KeyboardInterrupt:
 		log('KeyboardInterrupt')
 		os._exit(0)
@@ -88,7 +102,7 @@ def listen(address: str, port: int):
 				if req == '':
 					continue
 				if '?tn HTTP/1.1' in req:
-					thumbnailQueue.append((conn, req))
+					thumbnail_queue.append((conn, req))
 				else:
 					queue.append((conn, req))
 			except TimeoutError:
@@ -102,52 +116,54 @@ def listen(address: str, port: int):
 
 
 def thread_worker():
-	global busyCount
+	global busy_thread_count
 	while True:
 		try:
 			sleep(0.01)
-			if not len(queue) and not len(thumbnailQueue):
+			if not len(queue) and not len(thumbnail_queue):
 				continue
 
-			with busyLock:
-				busyCount += 1
+			with busy_thread_lock:
+				busy_thread_count += 1
 
-			startTime = perf_counter()
+			start_time = perf_counter()
 
 			try:
 				conn, req = queue.popleft()
 			except IndexError:
-				conn, req = thumbnailQueue.popleft()
-			firstLine = req.split('\r\n', 1)[0]
-			if firstLine.startswith('GET ') and firstLine.endswith(' HTTP/1.1'):
-				log('Popping get ' + firstLine[4:-9])
+				conn, req = thumbnail_queue.popleft()
+
+			first_line = req.split('\r\n', 1)[0]
+			if first_line.startswith('GET ') and first_line.endswith(' HTTP/1.1'):
+				log('Popping get ' + first_line[4:-9])
 			else:
 				log('Popping job ' + req.replace('\r\n', '\\n'))
+
 			bytes_ = handle_request.build_response_bytes(req)
-			conn.sendall(bytes_) # , flags=
+			conn.sendall(bytes_)
 			conn.close()
 
-			elapsed = perf_counter() - startTime
+			elapsed = perf_counter() - start_time
 			with stats.lock:
-				stats.bytesServed      += len(bytes_)
-				stats.processingTime   += elapsed
-				stats.requestsServed   += 1
+				stats.bytes_served      += len(bytes_)
+				stats.processing_time   += elapsed
+				stats.requests_served   += 1
 				if '?tn HTTP/1.1' in req:
-					stats.thumbnailsServed += 1
+					stats.thumbnails_served += 1
 
 			log(f'Finished in {elapsed:.3f} s')
 
-			with busyLock:
-				busyCount -= 1
+			with busy_thread_lock:
+				busy_thread_count -= 1
 		except:
-			log(f'threadWorker() exception {traceback.format_exc()}')
+			log(f'thread_worker() exception {traceback.format_exc()}')
 
 
 # MARK: server UI
 def ui():
 	# hotkey daemon
 	threading.Thread(
-		target=hotkeyListener,
+		target=hotkey_listener,
 		name='Hotkey Listener',
 		daemon=True).start()
 
@@ -161,30 +177,30 @@ def ui():
 		title = f' hoard Media Gallery serving at http://{config("address")}:{config("port")} '
 		pad = (cols - len(title)) // 2
 		title = f'{"=" * pad}{title}{"=" * pad}'
-		requestQueue = len(queue) + len(thumbnailQueue)
-		with busyLock:
-			busyWorkers = busyCount
+		request_queue = len(queue) + len(thumbnail_queue)
+		with busy_thread_lock:
+			busy_workers = busy_thread_count
 		with stats.lock:
-			tn  = stats.thumbnailsServed
-			b   = stats.bytesServed
-			pt  = stats.processingTime
-			rq  = stats.requestsServed
+			tn  = stats.thumbnails_served
+			b   = stats.bytes_served
+			pt  = stats.processing_time
+			rq  = stats.requests_served
 		req_sec = (rq - last_rq) / sec_per_frame
 		req_sec_avg = req_sec * 0.005 + req_sec_avg * 0.995
 		last_rq = rq
-		statsLine = f'{tn:,} tn  {b:,} B  {pt:.1f} s  {req_sec_avg:.0f} req/s'
+		stats_line = f'{tn:,} tn  {b:,} B  {pt:.1f} s  {req_sec_avg:.0f} req/s'
 		sys.stdout.write(
 			f'\033[5A'
 			f'{title}\n'
 			f'Press <CTRL+C> to quit, <CTRL+R> to restart.\n'
-			f'\r\033[K{requestQueue:>4} queue   {"Q" * min(requestQueue, cols - 20)}\n'
-			f'\r\033[K{busyWorkers :>4} workers {"W" * min(busyWorkers, cols - 20)}\n'
-			f'\r\033[K{statsLine}\n'
+			f'\r\033[K{request_queue:>4} queue   {"Q" * min(request_queue, cols - 20)}\n'
+			f'\r\033[K{busy_workers :>4} workers {"W" * min(busy_workers, cols - 20)}\n'
+			f'\r\033[K{stats_line}\n'
 		)
 		sys.stdout.flush()
 
 
-def hotkeyListener():
+def hotkey_listener():
 	while True:
 		sleep(0.05)
 		if not msvcrt.kbhit():

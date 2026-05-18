@@ -69,7 +69,7 @@ a {
 }
 
 .tn {
-	/* opacity       : 75%; */
+	opacity       : 75%;
 	color         : white;
 	margin        : 3px;
 	outline-color : transparent;
@@ -172,7 +172,7 @@ a {
 	display   : none;
 }
 
-#viewImg {
+#viewImg, #viewImg2 {
 	display      : block;
 	margin       : auto;
 	max-height   : 99%;

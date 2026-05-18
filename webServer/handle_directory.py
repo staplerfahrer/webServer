@@ -7,7 +7,7 @@ from config import config
 from log import log
 import filesystem as fs
 
-BLOCK_LIST = [r'\\thumbs.db$', r'.deleted$', r'\.xmp$']
+BLOCK_LIST = [r'thumbs.db$', r'.deleted$', r'\.xmp$', r'desktop\.ini$', r'\.mylock_', r'\.lnk$']
 
 def run(server_path: str) -> tuple[bytes, str]:
 	t = perf_counter()

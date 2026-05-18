@@ -1,7 +1,7 @@
 import io
 import os
 # pip install types-Pillow to fix Pylance
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
 from random import randrange
 import subprocess
 import traceback
@@ -52,6 +52,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 			img = Image.open(reqObjBytes)
 		else:
 			img  = Image.open(reqObj)
+		img  = ImageOps.exif_transpose(img)
 		text = f'{file_extension}  {img.size[0]} x {img.size[1]}'
 
 		# convert to RGB

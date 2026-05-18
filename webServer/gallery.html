@@ -11,6 +11,7 @@
 <body>
 	<div id="viewBox">
 		<img id="viewImg">
+		<img id="viewImg2">
 		<video id="viewVideo" controls></video>
 	</div>
 	<div id="autoPlayButton"></div>
@@ -23,7 +24,8 @@
 	<script>
 		// UI elements
 		let vb             = null // viewBox
-		let vi             = null // viewImage
+		let vi             = null // viewImage (active buffer)
+		let vi2            = null // viewImage (back buffer, preloads next)
 		let vv             = null // viewVideo
 		let autoPlayButton = null
 
@@ -51,6 +53,8 @@
 
 		vb = document.getElementById('viewBox')
 		vi = document.getElementById('viewImg')
+		vi2 = document.getElementById('viewImg2')
+		vi2.style.display = 'none'
 		vv = document.getElementById('viewVideo')
 		autoPlayButton = document.getElementById('autoPlayButton')
 
@@ -58,8 +62,9 @@
 			const title1 = `hoard ${viewerState.imgUrls.length} ${decodeURIComponent(window.location.pathname)}`
 			document.title = title1
 
-			const title2 = `${decodeURIComponent(window.location.pathname)} — ${viewerState.imgUrls.length} files`
-			document.getElementById('titleContainer').innerText = title2
+			const count = viewerState.imgUrls.length
+			const title2 = `${decodeURIComponent(window.location.pathname)} <span style="opacity:0.5">—</span> ${count} ${count === 1 ? 'file' : 'files'}`
+			document.getElementById('titleContainer').innerHTML = title2
 
 			viewerState.dirUrls.forEach(addDir)
 			viewerState.imgUrls.forEach(thumbs.add)
@@ -285,10 +290,34 @@
 					type: source.getAttribute('type'),
 				})
 			} else {
-				// picture
-				vi.style.display = ''
-				vi.style.visibility = 'hidden'
-				vi.src = url
+				// picture — double-buffered to avoid flicker
+				const absUrl = new URL(url, location.href).href
+				if (vi2.complete && vi2.naturalWidth > 0 && vi2.src === absUrl) {
+					// back buffer already has this image — swap instantly
+					vi.style.display = 'none'
+					vi.classList.remove('slowZoom')
+					vi.onload = null
+					;[vi, vi2] = [vi2, vi]
+					vi2.style.display = 'none'
+					vi2.onload = null
+					vi.style.display = ''
+					vi.style.visibility = 'hidden'
+					zoomStyle()
+				} else {
+					vi.style.display = ''
+					vi.style.visibility = 'hidden'
+					vi.onload = zoomStyle
+					vi.src = url
+				}
+				// preload next image into back buffer
+				const nextIdx = viewerState.viewedIndex + 1
+				if (nextIdx < viewerState.imgUrls.length) {
+					const nextUrl = viewerState.imgUrls[nextIdx]
+					if (vi2.src !== new URL(nextUrl, location.href).href) {
+						vi2.onload = null
+						vi2.src = nextUrl
+					}
+				}
 				cacheNextImages()
 			}
 			window.location.hash=url
@@ -427,8 +456,6 @@
 		function bindEvents() {
 			// vb.onclick = toggleZoom
 			vb.onmouseup = toggleZoom
-
-			vi.onload = zoomStyle
 
 			document.onkeydown = (e) => {
 				if (e.key == 'ArrowLeft' && e.ctrlKey) {
