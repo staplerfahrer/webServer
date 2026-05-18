@@ -32,7 +32,7 @@ RAW_EXTS = frozenset({'.crw', '.cr2'})
 
 def dcraw_extract(server_path: str) -> bytes | None:
 	result = subprocess.run(
-		['resources/dcraw-9.27-ms-64-bit.exe', '-e', '-c', server_path],
+		['resources/dcraw.exe', '-e', '-c', server_path],
 		capture_output=True
 	)
 	return result.stdout if result.returncode == 0 and result.stdout else None

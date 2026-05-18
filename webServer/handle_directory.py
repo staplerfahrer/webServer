@@ -7,7 +7,7 @@ from config import config
 from log import log
 import filesystem as fs
 
-BLOCK_LIST = [r'\\thumbs.db$', r'.deleted$']
+BLOCK_LIST = [r'\\thumbs.db$', r'.deleted$', r'\.xmp$']
 
 def run(server_path: str) -> tuple[bytes, str]:
 	t = perf_counter()
@@ -78,5 +78,5 @@ def _natural_key(path: str):
 
 def _is_blocked(path: str):
 	for p in BLOCK_LIST:
-		if re.search(p, path):
+		if re.search(p, path, re.IGNORECASE):
 			return True

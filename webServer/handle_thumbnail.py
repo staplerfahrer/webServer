@@ -39,15 +39,19 @@ def run(serverPath: str) -> tuple[bytes, str]:
 			log(f'Exception at "video thumbnail": {traceback.format_exc()}')
 
 	# for RAW files, extract the embedded JPEG via dcraw before PIL opens it
+	reqObjBytes = None
 	raw_ext = os.path.splitext(reqObj)[1].lower() if isinstance(reqObj, str) else ''
 	if raw_ext in fs.RAW_EXTS:
 		raw_bytes = fs.dcraw_extract(reqObj)
 		if raw_bytes:
-			reqObj = io.BytesIO(raw_bytes)
+			reqObjBytes = io.BytesIO(raw_bytes)
 
 	# make a thumbnail
 	try:
-		img  = Image.open(reqObj)
+		if reqObjBytes:
+			img = Image.open(reqObjBytes)
+		else:
+			img  = Image.open(reqObj)
 		text = f'{file_extension}  {img.size[0]} x {img.size[1]}'
 
 		# convert to RGB
@@ -92,6 +96,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		font_color = (95, 95, 95) if canvas.mode in ('RGB', 'RGBA') else 95
 		draw.text((tnWidthHeight[0] - tw - 2, tnWidthHeight[1] - th - 5), text, font=font, fill=font_color) # pyright: ignore[reportUnknownMemberType]
 
+	# clean up generated ffmpeg thumbnail
 	if reqObj.startswith('ffThumb') and os.path.exists(reqObj):
 		os.unlink(reqObj)
 
