@@ -29,7 +29,19 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		ffOutput  = f'ffThumb{randrange(1000000, 9999999)}.jpg'
 		timeStamp = '00:00:10.000'
 		for _ in range(2):
-			subprocess.call(['resources/ffmpeg.exe', '-i', reqObj, '-ss', timeStamp, '-update', '1', '-vframes', '1', ffOutput])
+			rcode = subprocess.call([
+				'resources/ffmpeg.exe',
+				'-i',
+				reqObj,
+				'-ss',
+				timeStamp,
+				'-update',
+				'1',
+				'-vframes',
+				'1',
+				ffOutput],
+				stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+			log(f'ffmpeg return code {rcode}')
 			if os.path.exists(ffOutput):
 				break
 			timeStamp = '00:00:01.000'
@@ -40,7 +52,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 
 	# for RAW files, extract the embedded JPEG via dcraw before PIL opens it
 	reqObjBytes = None
-	raw_ext = os.path.splitext(reqObj)[1].lower() if isinstance(reqObj, str) else ''
+	raw_ext = os.path.splitext(reqObj)[1].lower()
 	if raw_ext in fs.RAW_EXTS:
 		raw_bytes = fs.dcraw_extract(reqObj)
 		if raw_bytes:

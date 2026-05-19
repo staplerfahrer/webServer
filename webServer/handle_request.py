@@ -17,18 +17,23 @@ def build_response_bytes(req: str) -> bytes:
 	end                   = None
 
 	if resource(req):
-		log('resource')
 		data, mime = resource(req)
+
 	elif req.startswith('/.well-known'):
 		data, mime = b'', 'text/plain'
+
 	elif os.path.isdir(req_server_path):
 		data, mime = handle_directory.run(req_server_path)
+
 	elif req_server_path.endswith('?tn'): # remove ?tn
 		data, mime = handle_thumbnail.run(req_server_path)
+
 	elif req_server_path.endswith('?del'):
 		data, mime = fs.delete_file(req_server_path)
+
 	elif req_server_path.endswith('?explorer'):
 		data, mime = _open_explorer(req_server_path)
+
 	else:
 		result = handle_file.run(req_server_path, range_l, range_u)
 		if result is None:
@@ -48,26 +53,25 @@ def _open_explorer(serverPath: str) -> tuple[bytes, str]:
 
 def _decode_request(req: str) -> tuple[str, int | None, int | None]:
 	# req is the WHOLE http request
-	requestLines = req.split('\r\n')
-	reqHttpGet = requestLines[0]
-	reqRange   = [l for l in requestLines if 'range:' in str.lower(l)]
+	request_lines = req.split('\r\n')
 
-	if not reqHttpGet.startswith('GET '):
+	http_get = request_lines[0]
+	if not http_get.startswith('GET '):
 		raise Exception('request not GET')
-	if not reqHttpGet.endswith(' HTTP/1.1'):
+	if not http_get.endswith(' HTTP/1.1'):
 		raise Exception('request not HTTP/1.1')
 
-	reqHttpGet = unquote(reqHttpGet[4:-9], encoding='utf-8', errors='strict')
+	requested_path = unquote(http_get[4:-9], encoding='utf-8', errors='strict')
 
-	rangeLower = None
-	rangeUpper = None
-	if reqRange:
-		reqRange = str.replace(reqRange[0].lower(), 'range: bytes=', '')
-		rangeSplit = reqRange.split('-')
-		rangeLower = int(rangeSplit[0] or '0')
-		rangeUpper = int(rangeSplit[1]) if rangeSplit[1] != '' else None # 0-based, inclusive
+	http_range = [l for l in request_lines if 'range:' in str.lower(l)]
+	if not http_range:
+		return requested_path, None, None
 
-	return reqHttpGet, rangeLower, rangeUpper
+	http_range = str.replace(http_range[0].lower(), 'range: bytes=', '')
+	split = http_range.split('-')
+	range_l = int(split[0] or '0')
+	range_u = int(split[1]) if split[1] != '' else None # 0-based, inclusive
+	return requested_path, range_l, range_u
 
 
 def _encode(data: bytes, mime: str, range_l: int | None, range_u: int | None, end: int | None) -> bytes:
@@ -75,19 +79,19 @@ def _encode(data: bytes, mime: str, range_l: int | None, range_u: int | None, en
 		return bytes(
 			f'HTTP/1.1 206 Partial Content\r\n'
 			f'Accept-Ranges: bytes\r\n'
-			f'content-type: {mime}\r\n'
-			f'content-length: {len(data)}\r\n'
-			f'cache-control: max-age={config("cacheSeconds")}\r\n'
-			f'content-range: bytes {range_l}-{range_u}/{end}\r\n\r\n', 'utf-8') + data
+			f'Content-Type: {mime}\r\n'
+			f'Content-Length: {len(data)}\r\n'
+			f'Cache-Control: max-age={config("cacheSeconds")}\r\n'
+			f'Content-Range: bytes {range_l}-{range_u}/{end}\r\n\r\n', 'utf-8') + data
 	return bytes(
 		f'HTTP/1.1 200 OK\r\n'
 		f'Accept-Ranges: bytes\r\n'
-		f'content-type: {mime}\r\n'
-		f'content-length: {len(data)}\r\n'
+		f'Content-Type: {mime}\r\n'
+		f'Content-Length: {len(data)}\r\n'
 		f'{_set_cache(mime)}\r\n\r\n', 'utf-8') + data
 
 def _set_cache(mime: str):
 	if mime in ['text/plain', 'text/html']:
-		return f'cache-control: max-age=0'
+		return f'Cache-Control: max-age=0'
 	else:
-		return f'cache-control: max-age={config("cacheSeconds")}'
+		return f'Cache-Control: max-age={config("cacheSeconds")}'

@@ -67,7 +67,6 @@ def run(server_path: str) -> tuple[bytes, str]:
 		.replace(b'{zoomSpeed}', bytes(config('zoomSpeed'), 'utf-8'))
 		)
 	tick('template')
-
 	return data, 'text/html'
 
 

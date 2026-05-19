@@ -29,6 +29,7 @@ MIME: dict[str, str] = {
 
 RAW_EXTS = frozenset({'.crw', '.cr2'})
 
+NON_IMAGE_EXTS = frozenset({'.mp4', '.m4v', '.mov', '.ts', '.webm', '.mp3', '.m4a', '.ogg', '.wav'})
 
 def dcraw_extract(server_path: str) -> bytes | None:
 	result = subprocess.run(
@@ -49,25 +50,24 @@ def to_server_path(url: str) -> str:
 
 def read_file_bytes(file_name: str, range_l: int | None = None, range_u: int | None = None) \
 	 	-> tuple[bytes, int | None, int | None, int | None]:
-	try:
-		with open(file_name, 'rb') as f:
-			if range_l is not None:
-				f.seek(0, os.SEEK_END)
-				end = f.tell()
+	# range_u may be None
+	# (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range)
 
-				if range_l > end:
-					return bytes(), end - 1, end - 1, end - 1
-
-				# range_u may be None
-				# (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range)
-				if range_u is None or range_u >= end:
-					range_u = end - 1
-				f.seek(range_l)
-				return f.read(range_u - range_l + 1), range_l, range_u, end
+	with open(file_name, 'rb') as f:
+		if range_l is None:
 			return f.read(), None, None, None
-	except:
-		log(f'Exception at "__readFileBytes": {traceback.format_exc()}')
-		return b'', None, None, None
+
+		f.seek(0, os.SEEK_END)
+		file_end = f.tell()
+
+		if range_u is None:
+			range_u = range_l + config('streamingChunkBytes') - 1
+
+		if range_u >= file_end: # type: ignore
+			range_u = file_end - 1
+
+		f.seek(range_l)
+		return f.read(range_u - range_l + 1), range_l, range_u, file_end # type: ignore
 
 
 def delete_file(server_path: str) -> tuple[bytes, str]:

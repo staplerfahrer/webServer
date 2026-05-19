@@ -17,19 +17,31 @@ _PIL_MIME: dict[str, str] = {
 
 _PIL_EXTS = frozenset({'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'})
 
-
 def run(server_path: str, range_l: int | None, range_u: int | None) \
 		-> tuple[bytes, str, int | None, int | None, int | None] | None:
 	if not os.path.isfile(server_path):
 		return None
+
+	# convert raw files
 	ext = os.path.splitext(server_path)[1].lower()
 	if ext in fs.RAW_EXTS:
 		data = fs.dcraw_extract(server_path)
 		return (data, 'image/jpeg', None, None, None) if data else None
+
+	# serve non-images directly, potentially with range 206
+	if ext in fs.NON_IMAGE_EXTS:
+		data, mime, range_l, range_u, end = fs.serve_file(server_path, range_l, range_u)
+		return data, mime, range_l, range_u, end
+
+	# if another type not browser image
 	if ext not in _PIL_EXTS:
 		return _pil_convert(server_path)
+
+	# totally unknown mime type
 	if ext not in fs.MIME:
 		return None
+
+	# serve file with PIL mime
 	data, mime, range_l, range_u, end = fs.serve_file(server_path, range_l, range_u)
 	mime = _pil_mime(server_path, mime)
 	return data, mime, range_l, range_u, end

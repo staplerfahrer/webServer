@@ -31,10 +31,10 @@ THREAD_COUNT = 100
 #   never pre-cached, and the delay means ArrowRight only benefits if you paused. Reducing that delay to ~100ms and adding
 #    one step backward would help a lot too.
 
-queue         : deque[tuple[socket, str]] = deque()
-thumbnail_queue: deque[tuple[socket, str]] = deque()
-busy_thread_count     : int                       = 0
-busy_thread_lock      : threading.Lock            = threading.Lock()
+queue            : deque[tuple[socket, str]] = deque()
+thumbnail_queue  : deque[tuple[socket, str]] = deque()
+busy_thread_count: int                       = 0
+busy_thread_lock : threading.Lock            = threading.Lock()
 
 
 def check_dependencies():
@@ -70,7 +70,7 @@ def main():
 			threading.Thread(
 				target=listen,
 				args=(config('address'), port),
-				name=f'Listener {config("address")}:{port}',
+				name=f'Thumbnail Listener {config("address")}:{port}',
 				daemon=True).start()
 
 		workers = [threading.Thread(
