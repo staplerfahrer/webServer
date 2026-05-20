@@ -4,6 +4,8 @@
 
 # Bare Bones but FAST Media Server for Private Networks
 
+<img width="1702" height="963" alt="image" src="https://github.com/user-attachments/assets/fb78ad80-e100-4e42-abb8-908865629c7d" />
+
 * Install Python 3.11 or newer.
 * Make sure to install it to your system's %PATH% variable
 * Rename *config.json.example* to *config.json*
