@@ -32,6 +32,7 @@
 		// UI state
 		const viewerState = {
 			playState            : 'galleryMode', // galleryMode, viewMode, autoPlayMode
+			videoState           : 'none', // none, playing
 			autoPlay             : 0,
 			viewing              : false,
 			viewedIndex          : 0,
@@ -97,6 +98,12 @@
 			} else {
 				nn.remove()
 			}
+
+			vv.onplay    = e => {viewerState.videoState = 'playing'}
+			vv.onplaying = e => {viewerState.videoState = 'playing'}
+			vv.onpause   = e => {viewerState.videoState = 'none'}
+			vv.onending  = e => {viewerState.videoState = 'none'}
+			vv.onwaiting = e => {viewerState.videoState = 'none'}
 		}
 
 		//#region MARK:cookie stuff
@@ -172,18 +179,24 @@
 
 		//#region MARK:view/nav
 		function toggleZoom(e) {
-			if (e) {
-				console.log(e)
-			}
-			if (window.zoomed) {
+			if (window.zoomed) { // todo: this is viewerState stuff
+				// viewBox
 				vb.style.visibility = 'hidden'
 
+				// viewImage
 				// so that on next view, it doesn't show the old image
 				vi.src = ''
 				vi.classList.remove('slowZoom')
-				// hide both elements
 				vi.style.display = 'none'
+
+				// viewVideo
+				vv.pauseInterval = setInterval(()=>{
+					vv.pause()
+					if (viewerState.videoState == 'none')
+						clearInterval(vv.pauseInterval)
+				}, 500)
 				vv.style.display = 'none'
+
 				delete window.zoomed
 				changeAutoPlay('disable')
 				return
@@ -267,7 +280,7 @@
 
 			// update & display
 			let url = viewerState.imgUrls[viewerState.viewedIndex]
-			if (url.endsWith('.mp4') || url.endsWith('.webm')) {
+			if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ts')) {
 				// video
 				// https://stackoverflow.com/questions/5235145/changing-source-on-html5-video-tag
 				vv.style.display = 'inline-block'
@@ -285,10 +298,6 @@
 					vv.load()
 				}
 				vv.play()
-				console.log({
-					src: source.getAttribute('src'),
-					type: source.getAttribute('type'),
-				})
 			} else {
 				// picture — double-buffered to avoid flicker
 				const absUrl = new URL(url, location.href).href
@@ -450,53 +459,74 @@
 		}
 
 		//#region MARK:user events
-
 		// TODO: I wonder if the keyboard just needs to focus a control, like tab...
-
 		function bindEvents() {
 			// vb.onclick = toggleZoom
 			vb.onmouseup = toggleZoom
 
 			document.onkeydown = (e) => {
-				if (e.key == 'ArrowLeft' && e.ctrlKey) {
+				// directory navigation
+				if      (e.ctrlKey && e.key == 'ArrowLeft' ) {
 					const cur = window.location.pathname;
 					const idx = siblingUrls.indexOf(cur)
 					if (idx > 0) navigateTo(siblingUrls[idx - 1])
 				}
-				else if (e.key == 'ArrowLeft') {
-					viewerState.viewedIndex--
-					changeAutoPlay('reset')
-					updateViewed()
+				else if (e.ctrlKey && e.key == 'ArrowUp'   ) {
+					navigateTo(viewerState.dirUrls[0])
 				}
-				else if (e.key == 'ArrowRight' && e.ctrlKey) {
+				else if (e.ctrlKey && e.key == 'ArrowRight') {
 					const cur = window.location.pathname;
 					const idx = siblingUrls.indexOf(cur)
 					if (idx !== -1 && idx < siblingUrls.length - 1) navigateTo(siblingUrls[idx + 1])
+				}
+				// arrow keys
+				else if (e.key == 'ArrowLeft' ) {
+					viewerState.viewedIndex--
+					changeAutoPlay('reset')
+					updateViewed()
 				}
 				else if (e.key == 'ArrowRight') {
 					viewerState.viewedIndex++
 					changeAutoPlay('reset')
 					updateViewed()
 				}
-				else if (e.key == 'ArrowUp' && e.ctrlKey) {
-					navigateTo(viewerState.dirUrls[0])
-				}
-				else if (e.key == 'ArrowUp') {
+				else if (e.key == 'ArrowUp'   ) {
 					e.preventDefault()
 					viewerState.viewedIndex -= imagesPerRow()
 					changeAutoPlay('reset')
 					updateViewed()
 				}
-				else if (e.key == 'ArrowDown') {
+				else if (e.key == 'ArrowDown' ) {
 					e.preventDefault()
 					viewerState.viewedIndex += imagesPerRow()
 					changeAutoPlay('reset')
 					updateViewed()
 				}
+				// toggle viewing
 				else if (e.key == 'Escape' || e.key == 'Enter') {
 					toggleZoom()
 				}
-				if (e.key == 'Delete' && allowDelete && window.zoomed) {
+				// toggle full screen
+				else if (e.key == 'f') {
+					// todo: not nice, use global state object
+					// todo: esc doesn't stop the video
+					const fe = document.fullscreenElement
+					if (!fe) {
+						vv.requestFullscreen()
+					} else {
+						document.exitFullscreen()
+					}
+				}
+				// video controls
+				else if (e.code == 'Space') {
+					e.preventDefault()
+					if (viewerState.videoState == 'none')
+						vv.play()
+					else
+						vv.pause()
+				}
+				// delete
+				else if (e.key == 'Delete' && allowDelete) {
 					const url = viewerState.imgUrls[viewerState.viewedIndex]
 					if (confirm('Delete ' + url + '?')) {
 						fetch(url + '?del').then(r => r.text()).then(result => {
@@ -515,18 +545,9 @@
 						})
 					}
 				}
-				if (e.key == 'e') {
+				// explorer
+				else if (e.key == 'e') {
 					fetch(viewerState.imgUrls[viewerState.viewedIndex] + '?explorer')
-				}
-				if (e.key == 'f') {
-					// todo: not nice, use global state object
-					// todo: esc doesn't stop the video
-					const fe = document.fullscreenElement
-					if (!fe) {
-						vv.requestFullscreen()
-					} else {
-						document.exitFullscreen()
-					}
 				}
 			}
 

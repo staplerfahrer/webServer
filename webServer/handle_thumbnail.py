@@ -27,9 +27,9 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		if not (reqObj.endswith('.mp4') or reqObj.endswith('.m4v') or reqObj.endswith('.mov') or reqObj.endswith('.ts')):
 			raise Exception('not a video')
 		ffOutput  = f'ffThumb{randrange(1000000, 9999999)}.jpg'
-		timeStamp = '00:00:10.000'
-		for _ in range(2):
-			rcode = subprocess.call([
+		timeStamps = config('videoThumbnailTimeStamps')
+		for timeStamp in timeStamps:
+			proc = subprocess.run([
 				'resources/ffmpeg.exe',
 				'-i',
 				reqObj,
@@ -41,10 +41,11 @@ def run(serverPath: str) -> tuple[bytes, str]:
 				'1',
 				ffOutput],
 				stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-			log(f'ffmpeg return code {rcode}')
+			log(proc.stderr.decode('utf-8', errors='ignore'))
+			log(proc.stdout.decode('utf-8', errors='ignore'))
+			log(f'ffmpeg return code {proc.returncode}')
 			if os.path.exists(ffOutput):
 				break
-			timeStamp = '00:00:01.000'
 		reqObj = ffOutput
 	except Exception as e:
 		if 'not a video' not in e.args:
