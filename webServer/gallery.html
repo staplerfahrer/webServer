@@ -16,6 +16,10 @@
 	</div>
 	<div id="autoPlayButton"></div>
 	<div id="titleContainer"></div>
+	<div id="directoryBox">
+		<div id="siblings"></div>
+		<div id="children"></div>
+	</div>
 	<div id="thumbnailContainer"></div>
 	<div id="navigationContainer"><a id="navPrevious">&larr;</a>&emsp;<a id="navUp">&uarr;</a>&emsp;<a id="navNext">&rarr;</a></div>
 	<div id="directoryContainer"></div>
@@ -69,6 +73,9 @@
 
 			viewerState.dirUrls.forEach(addDir)
 			viewerState.imgUrls.forEach(thumbs.add)
+
+			buildDirectoryGrid(siblingUrls, viewerState.dirUrls)
+
 			let cur = window.location.pathname;
 			let idx = siblingUrls.indexOf(cur)
 
@@ -397,8 +404,8 @@
 			if (i === 0) return
 			let a = document.createElement('a')
 			a.href      = url
+			a.onclick   = navigate // todo: ugh
 			a.innerText = decodeURI(url.split('/').at(-1) || url)
-			a.onclick   = navigate
 			a.className = 'dirItem'
 			let c = document.getElementById('directoryContainer')
 			c.appendChild(a)
@@ -416,6 +423,36 @@
 				if (!scrollTarget) scrollTarget = elm
 			})
 			if (scrollTarget) scrollTarget.scrollIntoView()
+		}
+
+		function buildDirectoryGrid(siblings, children) {
+			let top = 0
+			let makeLink = url => {
+				let a       = document.createElement('a')
+				a.href      = url
+				a.onclick   = navigate // todo: ugh
+				a.innerText = decodeURI(url.split('/').at(-1) || url)
+				if (url === window.location.pathname) {
+					a.innerText = `⇝ ${a.innerText}`
+				}
+				return a
+			}
+
+			let sblns = siblings.map(makeLink)
+			let chlns = children.map(makeLink).splice(1)
+
+			let sbox = document.getElementById('siblings')
+			let cbox = document.getElementById('children')
+
+			sbox.append(...sblns)
+			cbox.append(...chlns)
+
+			sbox.childNodes.forEach(c => {
+				if (c.innerText[0] !== '⇝') return
+				c.parentElement.scrollTop = Math.max(
+					c.offsetTop - c.parentElement.offsetTop - (c.parentElement.clientHeight / 2 - c.clientHeight),
+					0)
+			})
 		}
 		//#endregion
 
@@ -438,7 +475,7 @@
 				elmtAtIdx.classList.remove('selection-outline')
 				if (elmtDataIdx == viewerState.viewedIndex) {
 					elmtAtIdx.classList.add('selection-outline')
-					document.documentElement.scrollTop = Math.max(elmtAtIdx.offsetTop - 200, 0)
+					document.documentElement.scrollTop = Math.max(elmtAtIdx.offsetTop - 400, 0)
 				}
 			}
 		}

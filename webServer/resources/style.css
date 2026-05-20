@@ -11,15 +11,15 @@ body {
 	background-attachment: fixed;
 }
 
-body::-webkit-scrollbar {
+*::-webkit-scrollbar {
 	width: 20px;
 }
 
-body::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
 	background: #1c1b19;
 }
 
-body::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
 	background-color: #775d07;
 	border-radius   : 3px;
 }
@@ -42,6 +42,37 @@ a {
 	justify-self    : center;
 	border-radius   : 10px;
 	text-shadow     : 0 0 2px black;
+}
+
+/* DIRECTORIES ///////////////////////////////////////////////////////////////*/
+#directoryBox {
+	position: relative;
+	margin-left: 10px;
+	width : 800px;
+	height: 300px;
+}
+#directoryBox > div {
+	position: absolute;
+	width: 360px;
+	height: 260px;
+	top: 0;
+	padding         : 10px;
+	border-radius   : 4px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	background-color: #00000030;
+}
+#siblings {
+	left: 0;
+}
+#children {
+	left: 400px;
+}
+#directoryBox a, #directoryBox a:visited {
+	color: #c09300;
+	display: block;
+	width: 100%;
+	white-space: nowrap;
 }
 
 /* THUMBNAILS ////////////////////////////////////////////////////////////////*/
