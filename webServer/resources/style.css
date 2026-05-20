@@ -165,10 +165,10 @@ a {
 }
 
 #viewVideo {
-	width     : 98vw;
+	width     : 100vw;
 	height    : auto;
 	max-width : none;
-	max-height: 98vh;
+	max-height: 100vh;
 	object-fit: contain;
 	margin    : auto;
 	display   : none;
