@@ -70,7 +70,7 @@
 			const title2 = `${decodeURIComponent(window.location.pathname)} <span style="opacity:0.5">—</span> ${count} ${count === 1 ? 'file' : 'files'}`
 			document.getElementById('titleContainer').innerHTML = title2
 
-			viewerState.dirUrls.forEach(addDir)
+			// viewerState.dirUrls.forEach(addDir)
 			viewerState.imgUrls.forEach(thumbs.add)
 
 			buildDirectoryGrid(siblingUrls, viewerState.dirUrls)
@@ -406,17 +406,16 @@
 		//#endregion
 
 		//#region MARK:load/cache
-		function addDir(url, i) {
-			if (i === 0) return
-			let a = document.createElement('a')
-			a.href      = url
-			a.onclick   = navigate // todo: ugh
-			a.innerText = decodeURI(url.split('/').at(-1) || url)
-			a.className = 'dirItem'
-			let c = document.getElementById('directoryContainer')
-			c.appendChild(a)
-			viewerState.dirElms[url] = a
-		}
+		// function addDir(url, i) {
+		// 	let a = document.createElement('a')
+		// 	a.href      = url
+		// 	a.onclick   = navigate // todo: ugh
+		// 	a.innerText = decodeURI(url.split('/').at(-1) || url)
+		// 	a.className = 'dirItem'
+		// 	let c = document.getElementById('directoryContainer')
+		// 	c.appendChild(a)
+		// 	viewerState.dirElms[url] = a
+		// }
 
 		function highlightLastDir() {
 			let lastChild = getCookie('lastChild=')
@@ -445,7 +444,7 @@
 			}
 
 			let sblns = siblings.map(makeLink)
-			let chlns = children.map(makeLink).splice(1)
+			let chlns = children.map(makeLink)
 
 			let sbox = document.getElementById('siblings')
 			let cbox = document.getElementById('children')

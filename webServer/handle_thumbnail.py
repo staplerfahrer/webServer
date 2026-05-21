@@ -94,11 +94,14 @@ def run(serverPath: str) -> tuple[bytes, str]:
 		canvas = ImageEnhance.Sharpness(canvas).enhance(factor=SHARPEN)
 	except Exception:
 		log(f'Exception at "make a thumbnail": {traceback.format_exc()}')
-		reqObj = 'resources\\thumbnail-bad-picture.png'
+		reqObj = 'resources\\Enso.png'
 		has_alpha = True
 		img  = Image.open(reqObj)
 		text = f'BAD FILE  {file_name}'
-		canvas = Image.new(img.mode, tnWidthHeight, tnColor if img.mode == 'RGB' else 0)
+
+		img.thumbnail(size=tnWidthHeight)
+
+		canvas = Image.new(img.mode, tnWidthHeight, 0)
 		left   = (tnWidthHeight[0] - img.size[0]) // 2
 		top    = (tnWidthHeight[1] - img.size[1]) // 2
 		canvas.paste(img, (left, top))
