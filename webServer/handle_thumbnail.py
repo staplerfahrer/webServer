@@ -2,11 +2,10 @@ import io
 import os
 # pip install types-Pillow to fix Pylance
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
-from random import randrange
 import subprocess
 import traceback
 
-from config import config
+from config import config, video_thumbnail_path
 import filesystem as fs
 from log import log
 
@@ -26,7 +25,7 @@ def run(serverPath: str) -> tuple[bytes, str]:
 	try:
 		if not (reqObj.endswith('.mp4') or reqObj.endswith('.m4v') or reqObj.endswith('.mov') or reqObj.endswith('.ts')):
 			raise Exception('not a video')
-		ffOutput  = f'ffThumb{randrange(1000000, 9999999)}.jpg'
+		ffOutput  = video_thumbnail_path()
 		timeStamps = config('videoThumbnailTimeStamps')
 		for timeStamp in timeStamps:
 			proc = subprocess.run([

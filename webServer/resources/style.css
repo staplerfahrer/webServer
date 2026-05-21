@@ -45,33 +45,20 @@ a {
 }
 
 /* DIRECTORIES ///////////////////////////////////////////////////////////////*/
-#directoryBox {
-	position: relative;
-	margin-left: 10px;
-	width : 800px;
-	height: 300px;
-}
-#directoryBox > div {
-	position: absolute;
-	width: 360px;
-	height: 260px;
-	top: 0;
+#siblings, #children {
 	padding         : 10px;
 	border-radius   : 4px;
-	overflow-x: hidden;
-	overflow-y: auto;
-	background-color: #00000030;
+	overflow-x      : hidden;
+	overflow-y      : auto;
+	background-color: #262523; /* picked from thumbnail in browser */
+	box-sizing      : border-box;
 }
-#siblings {
-	left: 0;
-}
-#children {
-	left: 400px;
-}
-#directoryBox a, #directoryBox a:visited {
-	color: #c09300;
-	display: block;
-	width: 100%;
+
+#siblings a, #children a,
+#siblings a:visited, #children a:visited {
+	color      : #c09300;
+	display    : block;
+	width      : 100%;
 	white-space: nowrap;
 }
 

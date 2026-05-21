@@ -14,6 +14,7 @@ copy webServer\handle_thumbnail.py                 %dst%\handle_thumbnail.py
 copy webServer\log.py                              %dst%\log.py
 copy webServer\main.py                             %dst%\main.py
 copy webServer\resources.py                        %dst%\resources.py
+copy webServer\requirements.txt                    %dst%\requirements.txt
 copy webServer\stats.py                            %dst%\stats.py
 copy webServer\thumbnail.html                      %dst%\thumbnail.html
 copy webServer\resources\favicon.svg               %dst%\resources\favicon.svg

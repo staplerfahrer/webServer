@@ -18,8 +18,11 @@ def run(server_path: str) -> tuple[bytes, str]:
 		t = now
 
 	# discover directories & files
-	req_obj = server_path.replace('..', '')
-	is_root = os.path.abspath(req_obj) == config('root')
+	root    = config('root')
+	req_obj = os.path.abspath(server_path)
+	if not (req_obj == root or req_obj.startswith(root + os.sep)):
+		req_obj = root
+	is_root = req_obj == root
 	parent_path = [os.path.abspath(os.path.join(req_obj, '..'))] if not is_root else []
 	tick('abspath/isRoot')
 
@@ -43,7 +46,7 @@ def run(server_path: str) -> tuple[bytes, str]:
 	sibling_urls: list[str] = []
 	if not is_root:
 		with os.scandir(parent_path[0]) as parent_itr:
-			sibling_urls = [fs.to_client_path(e.path) for e in sorted(parent_itr, key=lambda e: _natural_key(e.path)) if e.is_dir()]
+			sibling_urls = ['..'] + [fs.to_client_path(e.path) for e in sorted(parent_itr, key=lambda e: _natural_key(e.path)) if e.is_dir()]
 	tick('siblings')
 
 	# produce HTML

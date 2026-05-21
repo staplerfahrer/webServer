@@ -16,11 +16,10 @@
 	</div>
 	<div id="autoPlayButton"></div>
 	<div id="titleContainer"></div>
-	<div id="directoryBox">
+	<div id="thumbnailContainer">
 		<div id="siblings"></div>
 		<div id="children"></div>
 	</div>
-	<div id="thumbnailContainer"></div>
 	<div id="navigationContainer"><a id="navPrevious">&larr;</a>&emsp;<a id="navUp">&uarr;</a>&emsp;<a id="navNext">&rarr;</a></div>
 	<div id="directoryContainer"></div>
 	<!-- Loads the thumbs object & everything else -->
@@ -381,7 +380,14 @@
 		}
 
 		function navigateTo(relUrl) {
-			let absUrl = window.location.origin + relUrl
+			let absUrl
+			if (relUrl === '..') {
+				let segs = window.location.pathname.split('/').filter(Boolean)
+				segs.pop()
+				absUrl = window.location.origin + (segs.length ? '/' + segs.join('/') : '/')
+			} else {
+				absUrl = window.location.origin + relUrl
+			}
 
 			// highlight now so bfcache preserves it when hitting back
 			let elm = viewerState.dirElms[relUrl]

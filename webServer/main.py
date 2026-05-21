@@ -15,7 +15,7 @@ from log import log
 import handle_request
 import stats
 
-THREAD_COUNT = 100
+THREAD_COUNT = 30
 # TODO: MRU in cookie
 # TODO: fix video player full-screen
 # TODO: fix video player keyboard seek
